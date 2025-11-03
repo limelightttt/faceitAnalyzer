@@ -11,6 +11,7 @@ import (
 	"strings"
 )
 
+// Структура события Faceit webhook DEMO_READY
 type DemoReadyEvent struct {
 	Event   string `json:"event"`
 	Payload struct {
@@ -19,6 +20,7 @@ type DemoReadyEvent struct {
 	} `json:"payload"`
 }
 
+// OAuth токен
 type OAuthToken struct {
 	AccessToken  string `json:"access_token"`
 	RefreshToken string `json:"refresh_token,omitempty"`
@@ -26,6 +28,7 @@ type OAuthToken struct {
 	TokenType    string `json:"token_type,omitempty"`
 }
 
+// Сохранение токена в data/tokens/{userID}.json
 func SaveToken(userID int64, token OAuthToken) error {
 	dir := "data/tokens"
 	if err := os.MkdirAll(dir, 0755); err != nil {
@@ -35,6 +38,7 @@ func SaveToken(userID int64, token OAuthToken) error {
 	return os.WriteFile(path, mustJSON(token), 0644)
 }
 
+// Загрузка токена
 func LoadToken(userID int64) (*OAuthToken, error) {
 	path := filepath.Join("data/tokens", fmt.Sprintf("%d.json", userID))
 	b, err := os.ReadFile(path)
@@ -48,7 +52,13 @@ func LoadToken(userID int64) (*OAuthToken, error) {
 	return &t, nil
 }
 
+// Запуск Webhook + OAuth Callback сервера
 func StartWebhookServer(addr string, demoHandler func(demoID string)) {
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprint(w, "✅ Faceit Analyzer is running on Render.")
+	})
+
 	http.HandleFunc("/webhook", func(w http.ResponseWriter, r *http.Request) {
 		var evt DemoReadyEvent
 		if err := json.NewDecoder(r.Body).Decode(&evt); err != nil {
@@ -73,10 +83,12 @@ func StartWebhookServer(addr string, demoHandler func(demoID string)) {
 		var chatID int64
 		fmt.Sscanf(state, "%d", &chatID)
 
+		log.Printf("➡️ Callback вызван: code=%s | state=%s", code, state)
+
 		token, err := exchangeCodeForToken(code)
 		if err != nil {
 			body, _ := io.ReadAll(r.Body)
-			log.Printf("❌ Ошибка обмена токена: %v | code=%s | state=%s | body=%s", err, code, state, string(body))
+			log.Printf("❌ Ошибка обмена токена: %v | code=%s | body=%s", err, code, string(body))
 			http.Error(w, "failed token exchange: "+err.Error(), 500)
 			return
 		}
@@ -90,14 +102,25 @@ func StartWebhookServer(addr string, demoHandler func(demoID string)) {
 		log.Printf("🎟️ FACEIT токен сохранён для чата %d", chatID)
 	})
 
-	log.Println("🌍 Webhook+OAuth сервер запущен на", addr)
+	// ✅ Автоматическое определение порта (Render задаёт $PORT)
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = strings.TrimPrefix(addr, ":")
+		if port == "" {
+			port = "8080"
+		}
+	}
+	fullAddr := ":" + port
+
+	log.Println("🌍 Webhook+OAuth сервер запущен на", fullAddr)
 	go func() {
-		if err := http.ListenAndServe(addr, nil); err != nil {
+		if err := http.ListenAndServe(fullAddr, nil); err != nil {
 			log.Fatalf("webhook server failed: %v", err)
 		}
 	}()
 }
 
+// Обмен кода на токен
 func exchangeCodeForToken(code string) (*OAuthToken, error) {
 	clientID := os.Getenv("FACEIT_CLIENT_ID")
 	clientSecret := os.Getenv("FACEIT_CLIENT_SECRET")

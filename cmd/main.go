@@ -1,8 +1,6 @@
 package main
 
 import (
-	"bot/faceit"
-	"bot/webhook"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -10,27 +8,38 @@ import (
 	"strconv"
 	"strings"
 
+	"bot/faceit"
+	"bot/webhook"
+
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/joho/godotenv"
 )
 
 func main() {
-	if err := godotenv.Load("../.env"); err != nil {
-		log.Println("⚠️ .env не найден, продолжаем (проверь переменные окружения)")
-	}
+	// Загружаем .env (локально)
+	_ = godotenv.Load("../.env")
 
+	// Telegram токен
 	botToken := os.Getenv("TELEGRAM_BOT_TOKEN")
 	if botToken == "" {
 		log.Fatal("❌ TELEGRAM_BOT_TOKEN не найден")
 	}
 
-	webhook.StartWebhookServer(":8080", func(demoID string) {
-		log.Printf("📩 Webhook DEMO_READY received: %s (demo-downloads disabled)", demoID)
+	// PORT для Render
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+
+	// Запуск HTTP сервера (webhook + oauth)
+	webhook.StartWebhookServer(":"+port, func(demoID string) {
+		log.Printf("📩 Webhook DEMO_READY: %s (demo-downloads disabled)", demoID)
 	})
 
+	// Telegram Bot API
 	bot, err := tgbotapi.NewBotAPI(botToken)
 	if err != nil {
-		log.Panic("❌ Ошибка инициализации бота:", err)
+		log.Panicf("❌ Ошибка инициализации бота: %v", err)
 	}
 	log.Printf("🤖 Авторизован как %s", bot.Self.UserName)
 
@@ -60,7 +69,7 @@ func main() {
 			redirect := os.Getenv("FACEIT_REDIRECT_URI")
 
 			if clientID == "" || redirect == "" {
-				bot.Send(tgbotapi.NewMessage(chatID, "❌ FACEIT_CLIENT_ID или FACEIT_REDIRECT_URI не заданы в .env"))
+				bot.Send(tgbotapi.NewMessage(chatID, "❌ FACEIT_CLIENT_ID или FACEIT_REDIRECT_URI не заданы"))
 				continue
 			}
 
@@ -69,15 +78,15 @@ func main() {
 				clientID, redirect, chatID,
 			)
 
-			msg := fmt.Sprintf("🔗 Авторизация FACEIT:\nОткрой ссылку в браузере:\n%s", authURL)
-			bot.Send(tgbotapi.NewMessage(chatID, msg))
+			bot.Send(tgbotapi.NewMessage(chatID, "🔗 Авторизация FACEIT:\n"+authURL))
 
 		case strings.HasPrefix(text, "/collect"):
 			parts := strings.Fields(text)
 			if len(parts) < 2 {
-				bot.Send(tgbotapi.NewMessage(chatID, "❌ Использование: /collect <faceit-никнейм> [count]"))
+				bot.Send(tgbotapi.NewMessage(chatID, "❌ Использование: /collect <ник> [кол-во]"))
 				continue
 			}
+
 			nick := parts[1]
 			count := 20
 			if len(parts) >= 3 {
@@ -104,9 +113,10 @@ func main() {
 		case strings.HasPrefix(text, "/analyze"):
 			parts := strings.Fields(text)
 			if len(parts) < 2 {
-				bot.Send(tgbotapi.NewMessage(chatID, "❌ Использование: /analyze <faceit-никнейм> [count]"))
+				bot.Send(tgbotapi.NewMessage(chatID, "❌ Использование: /analyze <ник> [кол-во]"))
 				continue
 			}
+
 			nick := parts[1]
 			count := 10
 			if len(parts) >= 3 {
@@ -115,7 +125,7 @@ func main() {
 				}
 			}
 
-			bot.Send(tgbotapi.NewMessage(chatID, fmt.Sprintf("🔎 Анализирую %s за последние %d матчей...", nick, count)))
+			bot.Send(tgbotapi.NewMessage(chatID, fmt.Sprintf("🔎 Анализирую %s...", nick)))
 			go func(chat int64, nickname string, cnt int) {
 				tok, _ := webhook.LoadToken(chat)
 				bearer := ""
@@ -128,7 +138,7 @@ func main() {
 					return
 				}
 				sendLong(bot, chat, report)
-				if bytes, err := jsonMarshalPretty(agg); err == nil {
+				if bytes, err := json.MarshalIndent(agg, "", "  "); err == nil {
 					file := tgbotapi.FileBytes{Name: fmt.Sprintf("%s_report.json", nickname), Bytes: bytes}
 					msg := tgbotapi.NewDocument(chat, file)
 					bot.Send(msg)
@@ -136,10 +146,6 @@ func main() {
 			}(chatID, nick, count)
 		}
 	}
-}
-
-func jsonMarshalPretty(v interface{}) ([]byte, error) {
-	return json.MarshalIndent(v, "", "  ")
 }
 
 func sendLong(bot *tgbotapi.BotAPI, chat int64, text string) {
