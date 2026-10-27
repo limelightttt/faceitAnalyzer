@@ -29,6 +29,8 @@ def test_parse_match_ref():
 def test_scout_report_prediction_and_validation(world_app):
     client, world, mock = world_app
     csrf = login(client, "scout_me")
+    # remove the bundled sample demo so that no positional evidence exists for anyone
+    assert client.delete("/api/demos/sample00mirage", headers={"X-CSRF-Token": csrf}).status_code == 204
     url = f"https://www.faceit.com/ru/cs2/room/{world['upcoming']}"
     assert (
         client.post("/api/scout", json={"url": "garbage"}, headers={"X-CSRF-Token": csrf}).status_code == 400
