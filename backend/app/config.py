@@ -15,8 +15,9 @@ class Settings(BaseSettings):
         env_file=(BACKEND_DIR / ".env", BACKEND_DIR.parent / ".env"), env_prefix="", extra="ignore"
     )
 
-    # "auto": use the FACEIT Data API when FACEIT_API_KEY is set, otherwise local fixtures.
-    faceit_provider: Literal["auto", "api", "fixtures"] = "auto"
+    # "api" (default): the real FACEIT Data API; without FACEIT_API_KEY requests fail with a clear 503.
+    # "fixtures": offline regression datasets — for tests/development only, never a silent fallback.
+    faceit_provider: Literal["api", "fixtures"] = "api"
     faceit_api_key: SecretStr | None = None
     faceit_api_base: str = "https://open.faceit.com/data/v4"
     # Client-side throttle; FACEIT enforces its own per-key quota and answers 429 when exceeded.
@@ -30,11 +31,48 @@ class Settings(BaseSettings):
     max_demo_upload_mb: int = Field(default=1024, ge=1)
     cors_origins: list[str] = ["http://localhost:5173", "http://127.0.0.1:5173"]
 
+    # --- storage / auth -------------------------------------------------------------------------
+    database_url: str = ""  # default: sqlite file in data_dir
+    # Public origin of the app (used for OAuth/OpenID return URLs and cookie security).
+    app_base_url: str = "http://localhost:8000"
+    session_ttl_hours: int = 24 * 14
+    session_idle_hours: int = 24 * 3
+    # FACEIT Connect (OAuth2 authorization code + PKCE). Register an app at developers.faceit.com.
+    faceit_client_id: str | None = None
+    faceit_client_secret: SecretStr | None = None
+    faceit_oauth_authorize_url: str = "https://accounts.faceit.com"
+    faceit_oauth_token_url: str = "https://api.faceit.com/auth/v1/oauth/token"
+    faceit_oauth_userinfo_url: str = "https://api.faceit.com/auth/v1/resources/userinfo"
+    faceit_oauth_scopes: str = "openid profile"
+    # Steam OpenID 2.0 needs no secret. A Steam Web API key is optional (persona name/avatar only).
+    steam_openid_url: str = "https://steamcommunity.com/openid/login"
+    steam_web_api_key: SecretStr | None = None
+    # Test-only shortcut that creates a session without OAuth. Refused unless explicitly enabled AND the
+    # app runs on localhost; never enable in production.
+    auth_dev_login: bool = False
+    auth_rate_limit_per_minute: int = 20
+
     @property
     def api_enabled(self) -> bool:
         if self.faceit_provider == "fixtures":
             return False
         return self.faceit_api_key is not None and bool(self.faceit_api_key.get_secret_value().strip())
+
+    @property
+    def secure_cookies(self) -> bool:
+        return self.app_base_url.startswith("https://")
+
+    @property
+    def faceit_oauth_configured(self) -> bool:
+        return bool(
+            self.faceit_client_id
+            and self.faceit_client_secret
+            and self.faceit_client_secret.get_secret_value()
+        )
+
+    @property
+    def db_url(self) -> str:
+        return self.database_url or f"sqlite:///{self.data_dir / 'app.db'}"
 
 
 @lru_cache

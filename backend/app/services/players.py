@@ -1,43 +1,81 @@
 """Assemble a PlayerDataset from any provider."""
 
 import asyncio
-import json
 import time
-from datetime import UTC, datetime
 from pathlib import Path
 
 from ..analytics.party import infer_parties
 from ..domain import DataQuality, PlayerDataset, PlayerMatch
 from ..faceit_normalize import build_match, normalize_profile
-from ..providers.base import FaceitProvider
+from ..providers.base import FaceitProvider, FetchRecord, fetch_log, freshness_summary
 
 _CACHE: dict[tuple[str, str, int], tuple[float, PlayerDataset]] = {}
 _CACHE_TTL = 120.0
 
 
-def _record_elo_snapshot(data_dir: Path, player_id: str, elo: int) -> None:
+def record_snapshot(
+    db, player_id: str, elo: int | None, level: int | None, matches: int | None = None
+) -> None:
     """Official Elo is only available as a current value; we keep our own time series of observations."""
-    path = data_dir / "elo_snapshots" / f"{player_id}.json"
-    path.parent.mkdir(parents=True, exist_ok=True)
-    snaps = json.loads(path.read_text("utf-8")) if path.exists() else []
-    now = datetime.now(UTC).isoformat()
-    if not snaps or snaps[-1]["elo"] != elo:
-        snaps.append({"at": now, "elo": elo})
-        path.write_text(json.dumps(snaps), "utf-8")
+    if db is None or elo is None:
+        return
+    from sqlalchemy import select
+
+    from ..db import PlayerSnapshot, utcnow
+
+    with db.session() as s:
+        last = s.scalar(
+            select(PlayerSnapshot)
+            .where(PlayerSnapshot.player_id == player_id)
+            .order_by(PlayerSnapshot.taken_at.desc())
+            .limit(1)
+        )
+        if last and last.elo == elo and (utcnow() - last.taken_at).total_seconds() < 3600:
+            return
+        s.add(PlayerSnapshot(player_id=player_id, elo=elo, level=level, matches=matches))
 
 
-def load_elo_snapshots(data_dir: Path, player_id: str) -> list[dict]:
-    path = data_dir / "elo_snapshots" / f"{player_id}.json"
-    return json.loads(path.read_text("utf-8")) if path.exists() else []
+def load_snapshots(db, player_id: str) -> list[dict]:
+    if db is None:
+        return []
+    from sqlalchemy import select
+
+    from ..db import PlayerSnapshot
+
+    with db.session() as s:
+        rows = s.scalars(
+            select(PlayerSnapshot)
+            .where(PlayerSnapshot.player_id == player_id)
+            .order_by(PlayerSnapshot.taken_at)
+        ).all()
+        return [{"at": r.taken_at.isoformat() + "Z", "elo": r.elo, "level": r.level} for r in rows]
 
 
 async def load_player_dataset(
-    provider: FaceitProvider, nickname: str, limit: int, data_dir: Path
+    provider: FaceitProvider, nickname: str, limit: int, data_dir: Path, db=None
 ) -> PlayerDataset:
     key = (provider.name, nickname.lower(), limit)
     hit = _CACHE.get(key)
     if hit and time.time() - hit[0] < _CACHE_TTL:
         return hit[1]
+    log: list[FetchRecord] = []
+    token = fetch_log.set(log)
+    try:
+        ds = await _load(provider, nickname, limit, db)
+    finally:
+        fetch_log.reset(token)
+    ds.quality.freshness = freshness_summary(log)
+    if ds.quality.freshness.get("stale"):
+        ds.quality.notes.insert(
+            0,
+            "FACEIT API сейчас недоступен — показаны сохранённые ранее данные "
+            f"(самые старые от {ds.quality.freshness['oldest'][:16].replace('T', ' ')} UTC)",
+        )
+    _CACHE[key] = (time.time(), ds)
+    return ds
+
+
+async def _load(provider: FaceitProvider, nickname: str, limit: int, db) -> PlayerDataset:
 
     raw_profile = await provider.get_player(nickname)
     profile = normalize_profile(raw_profile)
@@ -86,8 +124,8 @@ async def load_player_dataset(
         )
 
     infer_parties(matches, profile.player_id)
-    if profile.elo is not None and source == "faceit_api":
-        _record_elo_snapshot(data_dir, profile.player_id, profile.elo)
+    if source == "faceit_api":
+        record_snapshot(db, profile.player_id, profile.elo, profile.skill_level)
 
     has_ts = any(pm.match.started_at for pm in matches)
     has_elo = any(pm.team_avg_elo is not None for pm in matches)
@@ -124,7 +162,6 @@ async def load_player_dataset(
             notes=notes,
         ),
     )
-    _CACHE[key] = (time.time(), ds)
     return ds
 
 

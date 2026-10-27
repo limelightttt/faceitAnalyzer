@@ -9,6 +9,7 @@
  "score": "8:2",
  "players": 10,
  "highlights": 4,
+ "sample_version": 2,
  "parser": "demoparser2 0.42.0",
  "note": "Реальная CS2-демка (Valve MM, de_mirage) из тестов demoparser2, MIT. Предварительно разобрана."
 }

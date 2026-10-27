@@ -28,6 +28,7 @@ def main(path: str) -> None:
         "score": f"{t[0]['score']}:{t[1]['score']}",
         "players": len(a["players"]),
         "highlights": len(a["highlights"]),
+        "sample_version": 2,
         "parser": a["parser"],
         "note": "Реальная CS2-демка (Valve MM, de_mirage) из тестов demoparser2, MIT. Предварительно разобрана.",
     }

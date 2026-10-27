@@ -31,6 +31,7 @@ def _process_demo(src: str, out_path: str, file_name: str) -> dict[str, Any]:
 
 class DemoStore:
     def __init__(self, root: Path, keep_files: bool = False):
+        self.on_done = None  # callback(demo_id, analysis) — e.g. tactical ingestion
         self.root = root
         self.keep_files = keep_files
         root.mkdir(parents=True, exist_ok=True)
@@ -58,6 +59,8 @@ class DemoStore:
             self._futures.pop(demo_id)
             try:
                 meta.update(fut.result(), status="done", finished_at=datetime.now(UTC).isoformat())
+                if self.on_done:
+                    self.on_done(demo_id, self.analysis(demo_id) or {})
             except DemoParseError as exc:
                 meta.update(status="error", error=str(exc))
             except Exception as exc:  # parser crash on malformed input
@@ -124,11 +127,14 @@ class DemoStore:
             return
         meta = json.loads(src_meta.read_text("utf-8"))
         d = self.root / meta["id"]
-        if d.exists():
+        current = json.loads((d / "meta.json").read_text("utf-8")) if (d / "meta.json").exists() else None
+        if current and current.get("sample_version") == meta.get("sample_version"):
             return
-        d.mkdir(parents=True)
+        d.mkdir(parents=True, exist_ok=True)
         shutil.copy(src_an, d / "analysis.json")
         self._write_meta(meta)
+        if self.on_done:
+            self.on_done(meta["id"], self.analysis(meta["id"]) or {})
 
     def shutdown(self) -> None:
         if self._pool:

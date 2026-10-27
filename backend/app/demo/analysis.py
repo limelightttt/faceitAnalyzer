@@ -4,6 +4,7 @@ utility, economy) + highlights + per-player insights."""
 from collections import Counter, defaultdict
 from typing import Any
 
+from ..tactical.extract import extract_tactical
 from .highlights import find_highlights
 from .parser import NormalizedDemo
 
@@ -168,6 +169,7 @@ def analyze_demo(nd: NormalizedDemo, file_name: str) -> dict[str, Any]:
                     if prev["attacker"] == v and prev["victim_team"] == at and not prev["traded"]:
                         prev["traded"] = True
                         e["trade"] = True
+                        e["trade_for"] = prev["victim"]
                         st[a]["trade_kills"] += 1
                         traded.add(prev["victim"])
                         if prev["victim"] in st:
@@ -330,6 +332,7 @@ def analyze_demo(nd: NormalizedDemo, file_name: str) -> dict[str, Any]:
         )
 
     highlights = find_highlights(rounds_out, players_out, nd, tr)
+    tactical = extract_tactical(nd, rounds_out, team_of)
     by_round: dict[int, list[str]] = defaultdict(list)
     for h in highlights:
         by_round[h["round"]].append(h["id"])
@@ -351,6 +354,7 @@ def analyze_demo(nd: NormalizedDemo, file_name: str) -> dict[str, Any]:
         "rounds": rounds_out,
         "highlights": highlights,
         "insights": {p["steamid"]: player_insights(p, players_out) for p in players_out},
+        "tactical": tactical,
         "definitions": {
             "kast": "Доля раундов с убийством, ассистом, выживанием или разменянной смертью",
             "trade": f"Убийство врага, убившего тиммейта, в пределах {TRADE_WINDOW_S:.0f} с",
