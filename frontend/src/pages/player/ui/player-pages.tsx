@@ -32,11 +32,11 @@ export function PlayerOverviewPage() {
       {(d) => (
         <div className="space-y-4">
           <PlayerKpis data={d} />
-          <div className="grid gap-4 xl:grid-cols-[1.6fr_1fr]">
+          <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1.6fr_1fr]">
             <RatingTrend trend={d.trend} nickname={nickname} search={search} />
             <MapStats maps={d.maps} />
           </div>
-          <div className="grid gap-4 xl:grid-cols-[1.6fr_1fr]">
+          <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1.6fr_1fr]">
             <MatchesTable matches={d.matches} nickname={nickname} search={search} limit={8} title="Последние матчи" />
             {ins.data && <InsightsPanel data={ins.data} compact />}
           </div>

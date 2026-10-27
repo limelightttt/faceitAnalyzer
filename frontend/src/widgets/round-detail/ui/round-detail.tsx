@@ -80,7 +80,7 @@ export function RoundDetail({
           </Button>
         </div>
       </CardHeader>
-      <CardContent className="grid gap-4 lg:grid-cols-[1.6fr_1fr]">
+      <CardContent className="grid grid-cols-1 gap-4 lg:grid-cols-[1.6fr_1fr]">
         <div>
           <div className="mb-1 text-xs font-medium text-muted-foreground">Килл-фид</div>
           {r.kills.length === 0 ? (

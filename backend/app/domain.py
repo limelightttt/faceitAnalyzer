@@ -98,6 +98,7 @@ class DataQuality(BaseModel):
     has_team_elo: bool
     has_official_elo: bool
     notes: list[str] = []
+    freshness: dict = {}
 
 
 class PlayerMatch(BaseModel):

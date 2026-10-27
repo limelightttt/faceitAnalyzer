@@ -85,7 +85,7 @@ async def test_api_retries_429_and_caches(tmp_path, monkeypatch):
 
 async def test_api_errors(tmp_path):
     api = _api(lambda req: httpx.Response(401, json={}), tmp_path)
-    with pytest.raises(ProviderError, match="API key"):
+    with pytest.raises(ProviderError, match="FACEIT_API_KEY"):
         await api.get_match_stats("m")
     api404 = _api(lambda req: httpx.Response(404, json={}), tmp_path / "b")
     with pytest.raises(PlayerNotFound):
@@ -95,3 +95,38 @@ async def test_api_errors(tmp_path):
         await api.get_match_stats("m")
     except ProviderError as e:
         assert "Bearer" not in str(e) and json.dumps(str(e)).find(" k ") == -1
+
+
+async def test_api_serves_stale_cache_when_live_api_fails(tmp_path, monkeypatch):
+    from app.providers.base import fetch_log, freshness_summary
+
+    async def no_sleep(_):
+        return None
+
+    monkeypatch.setattr("app.providers.faceit_api.asyncio.sleep", no_sleep)
+    state = {"down": False}
+
+    def handler(req):
+        if state["down"]:
+            return httpx.Response(503)
+        return httpx.Response(200, json={"player_id": "p1", "nickname": "x"})
+
+    api = FaceitApiProvider(
+        "k",
+        "https://open.faceit.com/data/v4",
+        tmp_path,
+        rate=1000,
+        transport=httpx.MockTransport(handler),
+        profile_ttl=0,
+    )
+    assert (await api.get_player("x"))["player_id"] == "p1"
+    state["down"] = True
+    log = []
+    tok = fetch_log.set(log)
+    try:
+        assert (await api.get_player("x"))["player_id"] == "p1"  # expired cache, API down -> stale copy
+    finally:
+        fetch_log.reset(tok)
+    assert freshness_summary(log)["stale"] is True
+    with pytest.raises(ProviderError):
+        await api.get_player("never-cached")

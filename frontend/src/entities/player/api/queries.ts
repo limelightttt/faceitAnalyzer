@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 
 import { apiGet } from '@/shared/api/client'
 
-import type { BestWorst, Dataset, EloReport, Insights, MatchDetail, Matchmaking, Overview } from '../model/types'
+import type { BestWorst, EloReport, Insights, MatchDetail, Matchmaking, Overview } from '../model/types'
 
 const enc = encodeURIComponent
 
@@ -28,17 +28,10 @@ export const useMatchmaking = (nick: string, limit: number) => usePlayerResource
 export const useMatchDetail = (nick: string, limit: number, matchId: string) =>
   usePlayerResource<MatchDetail>(nick, limit, `matches/${enc(matchId)}`)
 
-export const useDatasets = () =>
-  useQuery({
-    queryKey: ['datasets'],
-    queryFn: ({ signal }) => apiGet<{ provider: string; datasets: Dataset[] }>('/datasets', signal),
-    staleTime: Infinity,
-  })
-
 export const useHealth = () =>
   useQuery({
     queryKey: ['health'],
     queryFn: ({ signal }) =>
-      apiGet<{ status: string; provider: string; api_key_configured: boolean; demo_parser: string }>('/health', signal),
+      apiGet<{ status: string; provider: string; api_key_configured: boolean; demo_parser: string; auth: { steam: boolean; faceit: boolean } }>('/health', signal),
     staleTime: 60_000,
   })

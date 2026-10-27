@@ -18,6 +18,8 @@ from demoparser2 import DemoParser
 
 SIDE = {2: "T", 3: "CT"}
 POST_ROUND_TICKS_FALLBACK = 7 * 64
+# Seconds after freeze end at which positions are sampled: setup (early), mid-round, late.
+PHASE_OFFSETS_S = {"early": 12, "mid": 28, "late": 50}
 
 
 class DemoParseError(Exception):
@@ -51,6 +53,8 @@ class NormalizedDemo:
     blinds: list[dict[str, Any]] = field(default_factory=list)
     grenades: list[dict[str, Any]] = field(default_factory=list)
     bomb: list[dict[str, Any]] = field(default_factory=list)
+    # positional snapshots per round phase (see PHASE_OFFSETS_S) for alive players
+    positions: list[dict[str, Any]] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -191,7 +195,7 @@ def parse_demo(path: Path) -> NormalizedDemo:
         equip=equip,
     )
 
-    deaths = _events(p, "player_death", available, player=["X", "Y"])
+    deaths = _events(p, "player_death", available, player=["X", "Y", "last_place_name"])
     for row in deaths.to_dict("records"):
         tick = int(row["tick"])
         rn = round_of(tick)
@@ -207,6 +211,8 @@ def parse_demo(path: Path) -> NormalizedDemo:
                 "assister": _sid(row.get("assister_steamid")),
                 "weapon": str(row.get("weapon") or ""),
                 "headshot": bool(row.get("headshot")),
+                "attacker_place": str(row.get("attacker_last_place_name") or "") or None,
+                "victim_place": str(row.get("user_last_place_name") or "") or None,
                 "flash_assist": bool(row.get("assistedflash")),
                 "wallbang": int(row.get("penetrated") or 0) > 0,
                 "thrusmoke": bool(row.get("thrusmoke")),
@@ -288,6 +294,34 @@ def parse_demo(path: Path) -> NormalizedDemo:
                         "place": str(row.get("user_last_place_name") or "") or None,
                     }
                 )
+    # positional snapshots: only inside the live part of a round (before its round_end)
+    snap: dict[int, tuple[int, str]] = {}
+    for r in rounds:
+        for phase, sec in PHASE_OFFSETS_S.items():
+            t = r.freeze_end_tick + int(sec * tickrate)
+            if t < r.end_tick:
+                snap[t] = (r.number, phase)
+    if snap:
+        pos = p.parse_ticks(["X", "Y", "last_place_name", "is_alive", "team_num"], ticks=sorted(snap))
+        for row in pos.itertuples(index=False):
+            sid = _sid(row.steamid)
+            rn_phase = snap.get(int(row.tick))
+            if sid is None or rn_phase is None or not bool(row.is_alive) or pd.isna(row.team_num):
+                continue
+            if int(row.team_num) not in SIDE:
+                continue
+            nd.positions.append(
+                {
+                    "round": rn_phase[0],
+                    "phase": rn_phase[1],
+                    "tick": int(row.tick),
+                    "steamid": sid,
+                    "side": SIDE[int(row.team_num)],
+                    "place": str(row.last_place_name or "") or None,
+                    "x": round(float(row.X), 1),
+                    "y": round(float(row.Y), 1),
+                }
+            )
     nd.kills.sort(key=lambda k: k["tick"])
     nd.damages.sort(key=lambda d: d["tick"])
     return nd
