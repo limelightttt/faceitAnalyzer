@@ -25,6 +25,21 @@ import numpy as np
 from ..domain import PlayerDataset
 from .stats_utils import r
 
+METHOD_RU = """Всё, кроме официального Elo, — оценки, а не рейтинг FACEIT.
+
+• Реконструкция: Data API не отдаёт Elo за каждый матч. Идём назад от текущего официального Elo по правилу
+  Elo: Δ = K·(исход − p), K = 50, p — предматчевая вероятность победы FACEIT (или ожидание по среднему Elo
+  команд). Для равного матча это привычные ±25. Ошибка растёт по мере удаления от текущего момента.
+• Прогноз: Monte Carlo на N матчей вперёд. Доля побед в каждой симуляции берётся из бета-апостериорного
+  распределения (априорное Beta(10,10) вокруг 50% — матчмейкинг стремится к равным играм — плюс последние
+  30 результатов). Показаны медиана и 80% интервал.
+• Elo по результатам: «перформанс-рейтинг» как в шахматах, адаптированный к 5v5 — индивидуальный Elo, при
+  котором ожидаемое число побед равно фактическому (вклад игрока в среднее команды — 1/5). Интервал — bootstrap
+  по матчам; широкий интервал ожидаем: один игрок — 20% команды.
+• Elo по игре: рейтинг игроков лобби регрессируется на их Elo (середины диапазонов уровней) внутри матчей;
+  превышение рейтинга игрока над лобби переводится в Elo. Это точка, к которой Elo будет стремиться при
+  сохранении текущей игры. Требует разброса уровней в лобби, иначе помечается как ненадёжная."""
+
 K = 50
 LEVEL_MID = {1: 400, 2: 625, 3: 825, 4: 975, 5: 1125, 6: 1275, 7: 1440, 8: 1640, 9: 1875}
 MIN_IMPLIED = 15
@@ -67,7 +82,9 @@ def project(ds: PlayerDataset, horizon: int = 30, sims: int = 4000, seed: int = 
     rng = np.random.default_rng(seed)
     p = rng.beta(a, b, size=sims)
     outcomes = rng.random((sims, horizon)) < p[:, None]
-    deltas = np.where(outcomes, K * 0.5, -K * 0.5)  # matchmaking targets p≈0.5 → ±25
+    # matchmaking targets even games; pre-match win probability varies a little around 0.5
+    p_match = np.clip(rng.normal(0.5, 0.05, size=(sims, horizon)), 0.3, 0.7)
+    deltas = K * (outcomes.astype(float) - p_match)
     paths = np.cumsum(deltas, axis=1)
     start = float(ds.profile.elo) if ds.profile.elo is not None else 0.0
     qs = np.percentile(paths, [10, 50, 90], axis=0) + start
@@ -103,10 +120,13 @@ def performance_implied(ds: PlayerDataset) -> dict[str, Any]:
         surplus.append(pm.stats.rating - lobby_mean_rating)
         lobby_elos.append((pm.team_avg_elo + pm.opp_avg_elo) / 2)
     res: dict[str, Any] = {"n_matches": len(surplus), "n_lobby_points": len(xs), "available": False}
-    if len(surplus) < MIN_IMPLIED or len(xs) < 50:
+    if len(surplus) < MIN_IMPLIED:
+        res["reason"] = f"Нужно ≥ {MIN_IMPLIED} матчей со средним Elo команд; есть {len(surplus)}."
+        return res
+    if len(xs) < 50:
         res["reason"] = (
-            f"Нужно ≥ {MIN_IMPLIED} матчей со средним Elo команд и уровнями игроков лобби; "
-            f"есть {len(surplus)} матчей."
+            "В лобби почти все игроки 10 уровня: уровень FACEIT не задаёт Elo точнее, чем «2001+», "
+            "поэтому связь рейтинга с Elo оценить нельзя."
         )
         return res
     x, y = np.array(xs), np.array(ys)
@@ -199,5 +219,5 @@ def elo_report(ds: PlayerDataset, snapshots: list[dict]) -> dict[str, Any]:
         "projection": project(ds),
         "results_implied": results_implied(ds, recon),
         "implied": performance_implied(ds),
-        "method": __doc__,
+        "method": METHOD_RU,
     }
