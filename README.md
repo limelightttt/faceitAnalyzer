@@ -16,7 +16,10 @@
 
 ## Запуск
 
-Нужны Python ≥ 3.11 с [uv](https://docs.astral.sh/uv/) и Node.js ≥ 20.
+**Windows 11:** `setup.cmd` один раз, затем `start.cmd` / `stop.cmd` / `status.cmd` — см. [docs/WINDOWS.md](docs/WINDOWS.md)
+(только localhost, без автозапуска; доступ с телефона — по желанию через Tailscale Serve).
+
+**macOS / Linux:** нужны Python ≥ 3.11 с [uv](https://docs.astral.sh/uv/) и Node.js ≥ 20.
 
 ```bash
 cp backend/.env.example backend/.env   # впишите FACEIT_API_KEY (server-side ключ из developers.faceit.com)
@@ -33,6 +36,9 @@ make serve                             # API + интерфейс на http://lo
   `${APP_BASE_URL}/api/auth/faceit/callback`, заполните `FACEIT_CLIENT_ID` / `FACEIT_CLIENT_SECRET`. Без них кнопка
   показывает «не настроен», остальное работает.
 * Steam и FACEIT можно привязать к одной учётной записи в «Настройках».
+* Закрытая бета: данные доступны только после входа (`REQUIRE_LOGIN=true`). `BETA_ALLOWLIST` — список SteamID64 / FACEIT
+  id / ников, которым разрешён вход. `TRACKING_INTERVAL_MINUTES` — как часто сохранять реальный Elo привязанных игроков
+  (0 — выключить). `DATA_DIR` — где хранить базу, кэш и демки.
 
 ### Проверка с настоящим FACEIT
 ```bash
@@ -44,17 +50,20 @@ make live-check NICK=ваш_ник ROOM=https://www.faceit.com/ru/cs2/room/1-…
 ## Проверки
 
 ```bash
-make test        # backend pytest (41 тест) + frontend vitest (4)
+make test        # backend pytest (75 тестов) + frontend vitest (4)
 make lint        # ruff + tsc + eslint
 make mock-stack  # в другом терминале: стек против MOCK FACEIT API (тестовый мир, не реальные данные)
 make e2e         # браузерный E2E Phase II (Playwright): вход, разведка, прогноз→результат, настройки, коуч, демки
+make e2e-beta    # самодостаточный E2E беты: экран входа, 401, разведка, перезапуск, сбой FACEIT, повтор демки, выход, телефон
 ```
 
 ## Документация
+* [docs/WINDOWS.md](docs/WINDOWS.md) — запуск на Windows 11, обновление, данные, Tailscale.
+* [docs/PRIVATE_BETA_REPORT.md](docs/PRIVATE_BETA_REPORT.md) — стабилизация к закрытой бете: найденные дефекты, проверки, ограничения.
 * [docs/PHASE2_REPORT.md](docs/PHASE2_REPORT.md) — что сделано и проверено во втором этапе, ограничения.
 * [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — модули, хранилище, потоки данных.
 * [docs/SECURITY.md](docs/SECURITY.md) — сессии, CSRF, OAuth/OpenID, привязка аккаунтов.
 * [docs/METHODOLOGY.md](docs/METHODOLOGY.md) — формулы и статистика (рейтинги, риск-модель, химия, тактика, прогнозы).
 * [docs/VALIDATION.md](docs/VALIDATION.md) — сверка разбора демок с Awpy.
 
-Не аффилировано с FACEIT или Valve. Прогнозы, риск-сигналы и оценки Elo — исследовательские, не официальные и не обвинения.
+FACEIT Intelligence by limelightttt. Не аффилировано с FACEIT или Valve. Прогнозы, риск-сигналы и оценки Elo — исследовательские, не официальные и не обвинения.
