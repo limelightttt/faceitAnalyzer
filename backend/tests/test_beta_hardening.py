@@ -222,3 +222,23 @@ def test_auth_callback_errors_return_to_the_app_for_browsers(tmp_path):
         )
         assert r.status_code == 303 and r.headers["location"].startswith("/?auth_error=")
         assert c.get("/api/auth/steam/callback?state=nope").status_code == 400  # API clients still get JSON
+
+
+def test_idle_and_absolute_session_expiry(tmp_path):
+    from datetime import timedelta
+
+    from app.db import AuthSession, utcnow
+
+    app, _ = _app(tmp_path, require_login=True)
+    with _client(app) as c:
+        login(c, "scout_me")
+        with app.state.ctx.db.session() as s:
+            row = s.query(AuthSession).one()
+            row.last_seen_at = utcnow() - timedelta(hours=app.state.ctx.settings.session_idle_hours + 1)
+        assert c.get("/api/players/scout_me/overview").status_code == 401
+        assert c.get("/api/auth/me").json()["authenticated"] is False
+        login(c, "scout_me")
+        with app.state.ctx.db.session() as s:
+            row = s.query(AuthSession).one()
+            row.expires_at = utcnow() - timedelta(seconds=1)
+        assert c.get("/api/auth/me").json()["authenticated"] is False
