@@ -13,6 +13,7 @@ import json
 import time
 from datetime import UTC, datetime
 from email.utils import parsedate_to_datetime
+from functools import partial
 from pathlib import Path
 from typing import Any
 
@@ -174,7 +175,7 @@ class FaceitApiProvider:
         if task is None:
             task = asyncio.ensure_future(self._fetch_and_store(path, params, allow_404, cp))
             self._inflight[key] = task
-            task.add_done_callback(lambda t, k=key: (self._inflight.pop(k, None), t.cancelled() or t.exception()))
+            task.add_done_callback(partial(self._fetch_done, key))
         try:
             body = await asyncio.shield(task)
         except ProviderError as exc:
@@ -183,6 +184,11 @@ class FaceitApiProvider:
             raise
         record_fetch(FetchRecord(path, datetime.now(UTC), False, False))
         return body
+
+    def _fetch_done(self, key: str, task: asyncio.Task) -> None:
+        self._inflight.pop(key, None)
+        if not task.cancelled():
+            task.exception()  # mark retrieved: waiters handle it, avoid "exception was never retrieved" noise
 
     async def _fetch_and_store(self, path, params, allow_404, cp: Path) -> dict[str, Any] | None:
         body = await self._fetch(path, params, allow_404)
