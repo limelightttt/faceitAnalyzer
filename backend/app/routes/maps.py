@@ -4,11 +4,11 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 
-from ..state import AppState, get_db, get_state
+from ..state import AppState, get_db, get_state, require_access
 from ..tactical.profiles import map_points, place_centroids
 from ..tactical.zones import radar_transforms
 
-router = APIRouter(prefix="/api/maps", tags=["maps"])
+router = APIRouter(prefix="/api/maps", tags=["maps"], dependencies=[Depends(require_access)])
 
 
 @router.get("/{map_name}")

@@ -6,10 +6,10 @@ from sqlalchemy.orm import Session
 from ..analytics import elo, insights, matchmaking, player
 from ..domain import PlayerDataset
 from ..services.players import load_player_dataset, load_snapshots
-from ..state import AppState, Auth, get_auth, get_db, get_state
+from ..state import AppState, Auth, get_db, get_state, require_access
 from .me import log_analysis
 
-router = APIRouter(prefix="/api/players", tags=["players"])
+router = APIRouter(prefix="/api/players", tags=["players"], dependencies=[Depends(require_access)])
 Limit = Annotated[int, Query(ge=5, le=300)]
 
 
@@ -23,7 +23,7 @@ async def overview(
     limit: Limit = 100,
     state: AppState = Depends(get_state),
     db: Session = Depends(get_db),
-    auth: Auth = Depends(get_auth),
+    auth: Auth = Depends(require_access),
 ):
     ds = await dataset(state, nickname, limit)
     log_analysis(db, auth, "player", ds.profile.nickname, ds.profile.nickname)

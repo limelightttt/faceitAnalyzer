@@ -28,6 +28,7 @@ def make_settings(tmp: Path, **kw) -> Settings:
         data_dir=tmp,
         app_base_url="http://localhost:8000",
         faceit_provider="fixtures",
+        require_login=False,
         sample_demos_dir=get_settings().sample_demos_dir,
         fixtures_dir=get_settings().fixtures_dir,
     )

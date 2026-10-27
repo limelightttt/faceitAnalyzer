@@ -61,7 +61,7 @@ def _steam_assertion(start_location: str, steam_id: str = STEAM_ID) -> dict[str,
         "openid.return_to": return_to,
         "openid.response_nonce": "2026-10-27T10:00:00Zabc",
         "openid.assoc_handle": "1234567890",
-        "openid.signed": "signed,op_endpoint,claimed_id",
+        "openid.signed": "signed,op_endpoint,claimed_id,identity,return_to,response_nonce,assoc_handle",
         "openid.sig": "c2ln",
     }
 
@@ -204,3 +204,14 @@ def test_faceit_not_configured_message(tmp_path):
         r = c.get("/api/auth/faceit/start", follow_redirects=False)
         assert r.status_code == 503 and "FACEIT_CLIENT_ID" in r.json()["detail"]
         assert c.get("/api/auth/me").json()["providers"]["faceit"]["configured"] is False
+
+
+def test_steam_claimed_id_must_be_signed(client):
+    """Regression: an assertion whose signature does not cover claimed_id must be rejected even if Steam says
+    is_valid:true for the remaining fields (otherwise a SteamID can be swapped -> account takeover)."""
+    c, app = client
+    r = c.get("/api/auth/steam/start", follow_redirects=False)
+    return_to, params = _steam_assertion(r.headers["location"], "76561198000000777")
+    params["openid.signed"] = "signed,op_endpoint,return_to,response_nonce,assoc_handle"
+    assert _cb(c, return_to, params).status_code == 400
+    assert c.get("/api/auth/me").json()["authenticated"] is False

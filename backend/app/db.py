@@ -29,6 +29,7 @@ from sqlalchemy import (
     UniqueConstraint,
     create_engine,
     event,
+    inspect,
 )
 from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column, sessionmaker
 
@@ -121,6 +122,8 @@ class PlayerSnapshot(Base):
     elo: Mapped[int | None] = mapped_column(Integer)
     level: Mapped[int | None] = mapped_column(Integer)
     matches: Mapped[int | None] = mapped_column(Integer)
+    # last time the same values were observed again (snapshots are stored only when values change)
+    confirmed_at: Mapped[datetime | None] = mapped_column(DateTime)
 
 
 class ScoutReport(Base):
@@ -197,6 +200,14 @@ class TacticalSample(Base):
     teammates: Mapped[list | None] = mapped_column(JSON)  # steam ids within the same place at that moment
 
 
+class AppMeta(Base):
+    """Key/value markers for one-time data migrations."""
+
+    __tablename__ = "app_meta"
+    key: Mapped[str] = mapped_column(String(64), primary_key=True)
+    value: Mapped[str] = mapped_column(String(256))
+
+
 class Goal(Base):
     __tablename__ = "goals"
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -210,6 +221,13 @@ class Goal(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
     baseline_until: Mapped[datetime | None] = mapped_column(DateTime)  # matches after this count as progress
     status: Mapped[str] = mapped_column(String(16), default="active")
+
+
+# (version, table, column, DDL) — append only; never edit released entries.
+MIGRATIONS: list[tuple[int, str, str, str]] = [
+    (2, "player_snapshots", "confirmed_at", "DATETIME"),
+]
+SCHEMA_VERSION = max(v for v, *_ in MIGRATIONS)
 
 
 @event.listens_for(Prediction, "before_update")
@@ -229,8 +247,42 @@ class Database:
                 dbapi_conn.execute("PRAGMA foreign_keys=ON")
                 dbapi_conn.execute("PRAGMA journal_mode=WAL")
 
-        Base.metadata.create_all(self.engine)
+        self._migrate()
         self._sessions = sessionmaker(self.engine, expire_on_commit=False)
+
+    def _migrate(self) -> None:
+        """Tiny schema migrator: `create_all` adds missing tables; columns added to existing tables are
+        applied from MIGRATIONS and tracked in PRAGMA user_version (SQLite) so upgrades keep user data."""
+        insp = inspect(self.engine)
+        fresh = not insp.get_table_names()
+        Base.metadata.create_all(self.engine)
+        if not self.engine.url.drivername.startswith("sqlite"):
+            return
+        with self.engine.begin() as conn:
+            current = conn.exec_driver_sql("PRAGMA user_version").scalar() or 0
+            if fresh:
+                conn.exec_driver_sql(f"PRAGMA user_version = {SCHEMA_VERSION}")
+                return
+            for version, table, column, ddl in MIGRATIONS:
+                if version <= current:
+                    continue
+                cols = {c["name"] for c in inspect(conn).get_columns(table)}
+                if column not in cols:
+                    conn.exec_driver_sql(f"ALTER TABLE {table} ADD COLUMN {column} {ddl}")
+            conn.exec_driver_sql(f"PRAGMA user_version = {SCHEMA_VERSION}")
+
+    def meta_get(self, key: str) -> str | None:
+        with self.session() as s:
+            row = s.get(AppMeta, key)
+            return row.value if row else None
+
+    def meta_set(self, key: str, value: str) -> None:
+        with self.session() as s:
+            row = s.get(AppMeta, key)
+            if row:
+                row.value = value
+            else:
+                s.add(AppMeta(key=key, value=value))
 
     @contextmanager
     def session(self) -> Iterator[Session]:

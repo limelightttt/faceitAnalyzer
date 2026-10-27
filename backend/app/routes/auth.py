@@ -76,17 +76,20 @@ def _consume_state(db: Session, request: Request, st: str | None, provider: str)
     return row
 
 
-async def _attach_profile_from_steam(db: Session, state: AppState, user: User, steam_id: str) -> None:
-    existing = db.get(GameProfile, user.id)
-    if existing and existing.source == "faceit_oauth":
-        return  # a verified FACEIT login always wins over a Steam-derived lookup
+async def _faceit_by_steam(state: AppState, steam_id: str):
     try:
         raw = await state.provider.get_player_by_steam(steam_id)
     except ProviderError:
+        return None
+    return normalize_profile(raw) if raw else None
+
+
+def _attach_profile_from_steam(db: Session, user: User, steam_id: str, prof) -> None:
+    existing = db.get(GameProfile, user.id)
+    if existing and existing.source == "faceit_oauth":
+        return  # a verified FACEIT login always wins over a Steam-derived lookup
+    if prof is None:
         return
-    if not raw:
-        return
-    prof = normalize_profile(raw)
     if existing:
         existing.faceit_player_id, existing.nickname, existing.steam_id, existing.source = (
             prof.player_id,
@@ -104,6 +107,13 @@ async def _attach_profile_from_steam(db: Session, state: AppState, user: User, s
                 source="steam_lookup",
             )
         )
+
+
+def _check_allowlist(state: AppState, row: OAuthState, *candidates: str | None) -> None:
+    """Private beta: only allowlisted SteamIDs / FACEIT ids / nicknames may sign in (linking an extra identity to an
+    already admitted account is allowed)."""
+    if row.link_user_id is None and not state.settings.allowed(*candidates):
+        raise HTTPException(403, "Закрытая бета: этот аккаунт не в списке доступа (BETA_ALLOWLIST)")
 
 
 def _finish_identity(
@@ -186,8 +196,12 @@ async def steam_callback(
         )
     except steam.SteamVerificationError as exc:
         raise HTTPException(400, str(exc)) from exc
+    faceit = await _faceit_by_steam(state, steam_id)
+    _check_allowlist(
+        state, row, steam_id, faceit.player_id if faceit else None, faceit.nickname if faceit else None
+    )
     user, _ = _finish_identity(db, request, auth, row, "steam", steam_id, None)
-    await _attach_profile_from_steam(db, state, user, steam_id)
+    _attach_profile_from_steam(db, user, steam_id, faceit)
     return _redirect_done(request, state, db, user, row.return_to)
 
 
@@ -249,6 +263,7 @@ async def faceit_callback(
         )
     except faceit_oauth.FaceitOAuthError as exc:
         raise HTTPException(502, str(exc)) from exc
+    _check_allowlist(state, row, info["guid"], info.get("nickname"))
     user, _ = _finish_identity(db, request, auth, row, "faceit", info["guid"], info.get("nickname"))
     gp = db.get(GameProfile, user.id)
     nick = info.get("nickname") or ""
@@ -286,6 +301,7 @@ async def dev_login(
     raw = await state.provider.get_player(body.faceit_nickname)
     prof = normalize_profile(raw)
     row = OAuthState(state="dev", provider="dev", browser_binding="", return_to="/")
+    _check_allowlist(state, row, prof.player_id, prof.nickname, prof.steam_id)
     user, _ = _finish_identity(db, request, auth, row, "dev", prof.player_id, prof.nickname)
     gp = db.get(GameProfile, user.id)
     if gp is None:

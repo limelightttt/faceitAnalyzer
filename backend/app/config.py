@@ -51,6 +51,14 @@ class Settings(BaseSettings):
     # app runs on localhost; never enable in production.
     auth_dev_login: bool = False
     auth_rate_limit_per_minute: int = 20
+    # Private beta: data endpoints (players, scout, demos, maps) require a signed-in user.
+    require_login: bool = True
+    # Optional comma-separated allowlist: SteamID64, FACEIT player id or FACEIT nickname. Empty = anyone may sign in.
+    beta_allowlist: str = ""
+
+    def allowed(self, *candidates: str | None) -> bool:
+        entries = {e.strip().lower() for e in self.beta_allowlist.split(",") if e.strip()}
+        return not entries or any(c and c.strip().lower() in entries for c in candidates)
 
     @property
     def api_enabled(self) -> bool:

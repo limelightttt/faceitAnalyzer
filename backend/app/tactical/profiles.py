@@ -21,6 +21,22 @@ SHARE_FLOOR = 0.35
 MIN_DUELS = 6
 
 
+def fingerprint(tactical: dict[str, Any]) -> str:
+    """Content key of a parsed demo: re-uploading the same match (even as a different file/archive) maps to
+    the same key, so positional evidence is never counted twice."""
+    import hashlib
+    import json
+
+    core = {
+        "map": tactical.get("map"),
+        "samples": [
+            (s["steam_id"], s["round"], s["kind"], s["phase"], s["x"], s["y"])
+            for s in tactical.get("samples", [])
+        ],
+    }
+    return "t" + hashlib.sha256(json.dumps(core, sort_keys=True).encode()).hexdigest()[:31]
+
+
 def ingest(session: Session, demo_id: str, tactical: dict[str, Any]) -> int:
     session.execute(delete(TacticalSample).where(TacticalSample.demo_id == demo_id))
     rows = [

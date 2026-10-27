@@ -6,7 +6,6 @@ them into plain, serializable records with round numbers and sides resolved.
 
 import bz2
 import gzip
-import shutil
 from dataclasses import asdict, dataclass, field
 from importlib.metadata import version
 from pathlib import Path
@@ -60,26 +59,42 @@ class NormalizedDemo:
         return asdict(self)
 
 
-def decompress_if_needed(path: Path) -> Path:
-    """FACEIT/Valve distribute demos as .dem, .dem.gz, .dem.bz2 or .dem.zst."""
+def decompress_if_needed(path: Path, max_bytes: int = 3 * 1024**3) -> Path:
+    """FACEIT/Valve distribute demos as .dem, .dem.gz, .dem.bz2 or .dem.zst. Output size is capped so a
+    small archive cannot expand into a disk-filling file (decompression bomb)."""
     name = path.name.lower()
     if name.endswith(".dem"):
         return path
     out = path.with_name(path.name.rsplit(".", 1)[0])
     if not out.name.lower().endswith(".dem"):
         out = out.with_name(out.name + ".dem")
-    if name.endswith(".gz"):
-        opener = gzip.open(path, "rb")
-    elif name.endswith(".bz2"):
-        opener = bz2.open(path, "rb")
-    elif name.endswith(".zst"):
-        import zstandard
+    try:
+        if name.endswith(".gz"):
+            opener = gzip.open(path, "rb")
+        elif name.endswith(".bz2"):
+            opener = bz2.open(path, "rb")
+        elif name.endswith(".zst"):
+            import zstandard
 
-        opener = zstandard.ZstdDecompressor().stream_reader(open(path, "rb"))
-    else:
-        raise DemoParseError("Поддерживаются .dem, .dem.gz, .dem.bz2, .dem.zst")
-    with opener as src, open(out, "wb") as dst:
-        shutil.copyfileobj(src, dst, 1 << 20)
+            opener = zstandard.ZstdDecompressor().stream_reader(open(path, "rb"))
+        else:
+            raise DemoParseError("Поддерживаются .dem, .dem.gz, .dem.bz2, .dem.zst")
+        written = 0
+        with opener as src, open(out, "wb") as dst:
+            while chunk := src.read(1 << 20):
+                written += len(chunk)
+                if written > max_bytes:
+                    raise DemoParseError(
+                        f"Распакованный файл больше {max_bytes // 1024**2} МБ — это не похоже на демку"
+                    )
+                dst.write(chunk)
+    except DemoParseError:
+        out.unlink(missing_ok=True)
+        raise
+    except Exception as exc:  # corrupt archive (gzip.BadGzipFile, OSError, zstd errors, EOFError ...)
+        out.unlink(missing_ok=True)
+        raise DemoParseError(f"Архив повреждён или не является демкой ({exc.__class__.__name__})") from exc
+    path.unlink(missing_ok=True)  # the compressed upload is no longer needed
     return out
 
 

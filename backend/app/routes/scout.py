@@ -9,7 +9,7 @@ from ..predictions import metrics, resolve_pending, serialize
 from ..providers.base import ProviderError
 from ..scout.service import start_job
 from ..scout.url import parse_match_ref
-from ..state import AppState, Auth, get_auth, get_db, get_state, require_user
+from ..state import AppState, Auth, get_db, get_state, require_access, require_user
 from .me import log_analysis
 
 router = APIRouter(prefix="/api", tags=["scout"])
@@ -34,7 +34,7 @@ async def create_scout(
     request: Request,
     db: Session = Depends(get_db),
     state: AppState = Depends(get_state),
-    auth: Auth = Depends(get_auth),
+    auth: Auth = Depends(require_access),
 ):
     match_id = parse_match_ref(body.url)
     if not match_id:
@@ -56,9 +56,10 @@ async def create_scout(
 
 
 @router.get("/scout/{sid}")
-def get_scout(sid: str, db: Session = Depends(get_db), auth: Auth = Depends(get_auth)):
+def get_scout(sid: str, db: Session = Depends(get_db), auth: Auth = Depends(require_access)):
     row = db.get(ScoutReport, sid)
-    if row is None:
+    # reports of signed-in users (with their prediction and "you" perspective) are private to their owner
+    if row is None or (row.user_id is not None and (auth.user is None or auth.user.id != row.user_id)):
         raise HTTPException(404, "Отчёт не найден")
     pred = db.scalar(
         select(Prediction)
@@ -140,6 +141,10 @@ class FeedbackIn(BaseModel):
 
 @router.post("/feedback", status_code=201)
 def add_feedback(body: FeedbackIn, db: Session = Depends(get_db), auth: Auth = Depends(require_user)):
+    if body.prediction_id is not None:
+        pred = db.get(Prediction, body.prediction_id)
+        if pred is None or pred.user_id != auth.user.id:
+            raise HTTPException(404, "Прогноз не найден")
     fb = Feedback(user_id=auth.user.id, **body.model_dump())
     db.add(fb)
     db.flush()
