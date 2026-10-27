@@ -1,0 +1,18 @@
+{
+ "player_id": "6513270e-269e-4d37-b2a7-4de452e6b438",
+ "nickname": "sim_player",
+ "avatar": "",
+ "country": "ru",
+ "games": {
+  "cs2": {
+   "region": "EU",
+   "game_player_id": "76561198143849730",
+   "skill_level": 10,
+   "faceit_elo": 2117,
+   "game_player_name": "sim_player",
+   "skill_level_label": "10",
+   "game_profile_id": ""
+  }
+ },
+ "faceit_url": "https://www.faceit.com/{lang}/players/sim_player"
+}

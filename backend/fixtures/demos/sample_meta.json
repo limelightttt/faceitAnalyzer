@@ -1,0 +1,14 @@
+{
+ "id": "sample00mirage",
+ "file_name": "test_demo.dem (demoparser2 test suite)",
+ "status": "done",
+ "source": "sample",
+ "created_at": "2026-01-01T00:00:00+00:00",
+ "map": "de_mirage",
+ "rounds": 10,
+ "score": "8:2",
+ "players": 10,
+ "highlights": 4,
+ "parser": "demoparser2 0.42.0",
+ "note": "Реальная CS2-демка (Valve MM, de_mirage) из тестов demoparser2, MIT. Предварительно разобрана."
+}

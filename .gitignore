@@ -1,0 +1,18 @@
+# secrets
+.env
+*.env.local
+# runtime data
+backend/data/
+backend/.venv/
+samples/*.dem
+samples/*.dem.*
+# python
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+# frontend
+frontend/node_modules/
+frontend/dist/
+*.tsbuildinfo
+.DS_Store
