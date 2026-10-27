@@ -116,11 +116,13 @@ async def build_report(
             raise ProviderError("У матча ещё нет составов команд", status=409)
         picks = ((details.get("voting") or {}).get("map") or {}).get("pick") or []
         mp = norm_map(picks[0]) if picks else None
-        rosters = [
-            (fk, r)
-            for fk in ("faction1", "faction2")
-            for r in (factions[fk].get("roster") or factions[fk].get("players") or [])
-        ]
+        rosters = []
+        seen: set[str] = set()
+        for fk in ("faction1", "faction2"):
+            for r in factions[fk].get("roster") or factions[fk].get("players") or []:
+                if r.get("player_id") and r["player_id"] not in seen:  # duplicated roster entries are ignored
+                    seen.add(r["player_id"])
+                    rosters.append((fk, r))
         done = 0
         players: list[PlayerFeatures] = []
 

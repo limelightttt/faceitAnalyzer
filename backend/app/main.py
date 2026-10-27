@@ -1,5 +1,6 @@
 """FastAPI application: FACEIT analytics, match scouting, accounts, demo pipeline."""
 
+import asyncio
 import logging
 from contextlib import asynccontextmanager
 from importlib.metadata import version
@@ -14,6 +15,7 @@ from fastapi.staticfiles import StaticFiles
 from sqlalchemy import delete, select
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
+from . import tracking
 from .config import Settings, get_settings
 from .db import ScoutReport, TacticalSample
 from .providers.base import ProviderError
@@ -72,7 +74,14 @@ def create_app(settings: Settings | None = None, provider: object | None = None)
         fail_interrupted_scouts()
         ctx.demos.seed_sample(settings.sample_demos_dir)
         rebuild_tactical_once()
+        tracker = None
+        if settings.tracking_interval_minutes > 0 and isinstance(ctx.provider, FaceitApiProvider):
+            tracker = asyncio.get_running_loop().create_task(
+                tracking.loop(ctx.provider, ctx.db, settings.tracking_interval_minutes * 60)
+            )
         yield
+        if tracker:
+            tracker.cancel()
         ctx.demos.shutdown()
         if isinstance(ctx.provider, FaceitApiProvider):
             await ctx.provider.aclose()

@@ -15,10 +15,12 @@ _CACHE_TTL = 120.0
 
 def record_snapshot(
     db, player_id: str, elo: int | None, level: int | None, matches: int | None = None
-) -> None:
-    """Official Elo is only available as a current value; we keep our own time series of observations."""
+) -> str:
+    """Official Elo is only available as a current value, so we keep our own time series of real observations.
+    A new row is written only when Elo or level changed; an unchanged observation just refreshes
+    `confirmed_at`. Returns "new" | "confirmed" | "skipped"."""
     if db is None or elo is None:
-        return
+        return "skipped"
     from sqlalchemy import select
 
     from ..db import PlayerSnapshot, utcnow
@@ -27,12 +29,18 @@ def record_snapshot(
         last = s.scalar(
             select(PlayerSnapshot)
             .where(PlayerSnapshot.player_id == player_id)
-            .order_by(PlayerSnapshot.taken_at.desc())
+            .order_by(PlayerSnapshot.taken_at.desc(), PlayerSnapshot.id.desc())
             .limit(1)
         )
-        if last and last.elo == elo and (utcnow() - last.taken_at).total_seconds() < 3600:
-            return
-        s.add(PlayerSnapshot(player_id=player_id, elo=elo, level=level, matches=matches))
+        if last and last.elo == elo and last.level == level:
+            last.confirmed_at = utcnow()
+            if matches is not None:
+                last.matches = matches
+            return "confirmed"
+        s.add(
+            PlayerSnapshot(player_id=player_id, elo=elo, level=level, matches=matches, confirmed_at=utcnow())
+        )
+        return "new"
 
 
 def load_snapshots(db, player_id: str) -> list[dict]:
@@ -48,7 +56,15 @@ def load_snapshots(db, player_id: str) -> list[dict]:
             .where(PlayerSnapshot.player_id == player_id)
             .order_by(PlayerSnapshot.taken_at)
         ).all()
-        return [{"at": r.taken_at.isoformat() + "Z", "elo": r.elo, "level": r.level} for r in rows]
+        return [
+            {
+                "at": r.taken_at.isoformat() + "Z",
+                "elo": r.elo,
+                "level": r.level,
+                "confirmed_at": r.confirmed_at.isoformat() + "Z" if r.confirmed_at else None,
+            }
+            for r in rows
+        ]
 
 
 async def load_player_dataset(
