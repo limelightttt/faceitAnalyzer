@@ -1,11 +1,13 @@
-import { Crosshair, FileVideo, GraduationCap, Home, LineChart, Radar, Settings } from 'lucide-react'
+import { FileVideo, GraduationCap, Home, LineChart, Radar, Settings } from 'lucide-react'
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
 
+import { useHealth } from '@/entities/player'
 import { useSession } from '@/entities/session'
 import { PlayerSearch } from '@/features/player-search'
+import { LoginPage } from '@/pages/login'
 import { ThemeToggle } from '@/features/theme-toggle'
 import { cn } from '@/shared/lib/cn'
-import { Button } from '@/shared/ui'
+import { BrandMark, Button, Skeleton } from '@/shared/ui'
 
 const NAV = [
   { to: '/', label: 'Главная', icon: Home, end: true },
@@ -33,17 +35,26 @@ function Account() {
   )
 }
 
+function Gate() {
+  const session = useSession()
+  const health = useHealth()
+  const { pathname, search } = useLocation()
+  if (session.isLoading || health.isLoading) return <Skeleton className="h-64" />
+  const anonymous = !session.data?.authenticated
+  if (anonymous && (health.data?.require_login || new URLSearchParams(search).has('auth_error'))) {
+    return <LoginPage returnTo={pathname === '/' ? '/' : pathname + search} />
+  }
+  return <Outlet />
+}
+
 export function AppLayout() {
   const { pathname } = useLocation()
   return (
     <div className="min-h-dvh">
       <header className="sticky top-0 z-40 border-b bg-background/85 backdrop-blur">
         <div className="mx-auto flex h-14 max-w-7xl items-center gap-2 px-4">
-          <Link to="/" className="flex shrink-0 items-center gap-2 font-semibold">
-            <span className="flex size-7 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-              <Crosshair className="size-4" />
-            </span>
-            <span className="hidden xl:inline">FACEIT Intelligence</span>
+          <Link to="/" className="shrink-0" aria-label="FACEIT Intelligence by limelightttt — главная">
+            <BrandMark className="[&>span:last-child]:hidden xl:[&>span:last-child]:flex" />
           </Link>
           <nav className="flex min-w-0 items-center gap-0.5 overflow-x-auto" aria-label="Основная навигация">
             {NAV.map((n) => (
@@ -69,10 +80,10 @@ export function AppLayout() {
         </div>
       </header>
       <main className="mx-auto max-w-7xl px-4 py-6">
-        <Outlet />
+        <Gate />
       </main>
       <footer className="mx-auto max-w-7xl px-4 pb-8 text-xs text-subtle-foreground">
-        Не аффилировано с FACEIT или Valve. Прогнозы, оценки Elo, риск-сигналы и анализ матчмейкинга — исследовательские, не официальные и не обвинения.
+        <span className="font-medium text-muted-foreground">FACEIT Intelligence by limelightttt</span> · Не аффилировано с FACEIT или Valve. Прогнозы, оценки Elo, риск-сигналы и анализ матчмейкинга — исследовательские, не официальные и не обвинения.
       </footer>
     </div>
   )

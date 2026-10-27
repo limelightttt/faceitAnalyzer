@@ -148,6 +148,8 @@ def create_app(settings: Settings | None = None, provider: object | None = None)
             else None,
             "api_key_configured": settings.api_enabled,
             "auth": {"steam": True, "faceit": settings.faceit_oauth_configured},
+            "require_login": settings.require_login,
+            "private_beta": bool(settings.beta_allowlist.strip()),
             "demo_parser": f"demoparser2 {version('demoparser2')}",
         }
 

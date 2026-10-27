@@ -31,7 +31,17 @@ export async function apiGet<T>(path: string, signal?: AbortSignal): Promise<T> 
   return res.json() as Promise<T>
 }
 
-async function send<T>(method: string, path: string, body?: unknown): Promise<T> {
+async function refreshCsrf(): Promise<void> {
+  try {
+    const me = await apiGet<{ csrf_token?: string }>('/auth/me')
+    csrfToken = me.csrf_token ?? null
+  } catch {
+    /* keep the old token */
+  }
+}
+
+async function send<T>(method: string, path: string, body?: unknown, retried = false): Promise<T> {
+  if (!csrfToken && !retried) await refreshCsrf()
   const headers: Record<string, string> = {}
   if (body !== undefined) headers['Content-Type'] = 'application/json'
   if (csrfToken) headers['X-CSRF-Token'] = csrfToken
@@ -41,7 +51,15 @@ async function send<T>(method: string, path: string, body?: unknown): Promise<T>
     credentials: 'same-origin',
     body: body === undefined ? undefined : JSON.stringify(body),
   })
-  if (!res.ok) throw await parseError(res)
+  if (!res.ok) {
+    const err = await parseError(res)
+    // the session (and its CSRF token) may have been rotated by a login in another tab: refresh once
+    if (res.status === 403 && /CSRF/i.test(err.message) && !retried) {
+      await refreshCsrf()
+      return send<T>(method, path, body, true)
+    }
+    throw err
+  }
   if (res.status === 204 || res.redirected || !res.headers.get('content-type')?.includes('json')) return undefined as T
   return res.json() as Promise<T>
 }
@@ -51,7 +69,8 @@ export const apiPut = <T>(path: string, body?: unknown) => send<T>('PUT', path, 
 export const apiDelete = (path: string) => send<void>('DELETE', path)
 
 /** Upload with progress (fetch has no upload progress events). */
-export function apiUpload<T>(path: string, file: File, onProgress: (ratio: number) => void): Promise<T> {
+export async function apiUpload<T>(path: string, file: File, onProgress: (ratio: number) => void): Promise<T> {
+  if (!csrfToken) await refreshCsrf()
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest()
     xhr.open('POST', `/api${path}`)

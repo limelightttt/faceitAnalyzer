@@ -27,7 +27,15 @@ export function usePlayerParams() {
 export function PlayerLayout() {
   const { nickname, limit, search } = usePlayerParams()
   const { data, error, isLoading, refetch } = useOverview(nickname, limit)
-  if (isLoading) return <PageSkeleton />
+  if (isLoading)
+    return (
+      <div className="space-y-3">
+        <div className="text-xs text-muted-foreground" role="status">
+          Загружаем {limit} последних матчей {nickname} из FACEIT… Первый раз это до ~{Math.ceil((limit * 2) / 4)} с (по 2 запроса на матч с ограничением частоты), дальше — из кэша.
+        </div>
+        <PageSkeleton />
+      </div>
+    )
   if (error || !data)
     return (
       <div className="space-y-3">

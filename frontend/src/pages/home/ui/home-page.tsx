@@ -59,7 +59,10 @@ function Dashboard({ nickname }: { nickname: string }) {
             </div>
           )}
         </div>
-        <ScoutLaunch className="w-full md:max-w-xl" />
+        <div className="w-full space-y-2 md:max-w-xl">
+          <ScoutLaunch />
+          <PlayerSearch />
+        </div>
       </section>
       {ov.isLoading ? <Skeleton className="h-28" /> : ov.error ? <ErrorState error={ov.error} /> : ov.data && <PlayerKpis data={ov.data} />}
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
@@ -155,7 +158,10 @@ export function HomePage() {
       <section className="relative overflow-hidden rounded-2xl border bg-card p-6 md:p-10">
         <div className="pointer-events-none absolute -top-24 -right-24 size-72 rounded-full bg-primary/15 blur-3xl" />
         <div className="relative max-w-2xl space-y-5">
-          <h1 className="text-3xl font-semibold tracking-tight md:text-4xl">FACEIT Intelligence</h1>
+          <div>
+            <h1 className="text-3xl font-semibold tracking-tight md:text-4xl">FACEIT Intelligence</h1>
+            <div className="mt-1 text-sm text-subtle-foreground">by limelightttt</div>
+          </div>
           <p className="text-muted-foreground">
             Разведка перед матчем, разбор после, рост на дистанции. Только реальные данные FACEIT и ваших демок — с явной пометкой, где факт, где оценка, а где гипотеза.
           </p>

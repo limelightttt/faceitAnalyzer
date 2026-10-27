@@ -152,7 +152,7 @@ export interface Insights {
 
 export interface EloReport {
   official: { elo: number | null; skill_level: number | null; source: DataSource }
-  snapshots: { at: string; elo: number }[]
+  snapshots: { at: string; elo: number; level: number | null; confirmed_at: string | null }[]
   reconstructed: { match_id: string; started_at: string | null; elo_after: number; delta: number; won: boolean; distance: number }[]
   projection: {
     start: number | null

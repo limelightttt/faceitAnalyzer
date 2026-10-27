@@ -1,4 +1,4 @@
-import { Area, CartesianGrid, ComposedChart, Line, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
+import { Area, CartesianGrid, ComposedChart, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 
 import type { EloReport } from '@/entities/player'
 import { dateTime, pct, signed } from '@/shared/lib/format'
@@ -117,15 +117,54 @@ export function EloPanel({ data }: { data: EloReport }) {
 
       <Card>
         <CardHeader>
+          <CardTitle>Наблюдённый официальный Elo</CardTitle>
+          <CardDescription>
+            Реальные значения FACEIT, зафиксированные приложением (при открытии профиля и автоматически каждые несколько часов для привязанных аккаунтов).
+            Новая точка — только при изменении; между точками значение подтверждалось, но не менялось.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {data.snapshots.length < 2 ? (
+            <EmptyState title={data.snapshots.length ? `Пока одно наблюдение: ${data.snapshots[0].elo} Elo (${dateTime(data.snapshots[0].at)})` : 'Наблюдений пока нет'}>
+              История формируется только из реально наблюдённых значений — без восстановления задним числом.
+            </EmptyState>
+          ) : (
+            <div className="h-48">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={data.snapshots.map((s) => ({ ...s, t: new Date(s.at).getTime() }))} margin={{ top: 8, right: 12, bottom: 0, left: -4 }}>
+                  <CartesianGrid {...gridProps} />
+                  <XAxis dataKey="t" type="number" domain={['dataMin', 'dataMax']} scale="time" {...axisProps} tickFormatter={(t: number) => new Date(t).toLocaleDateString('ru-RU', { day: '2-digit', month: 'short' })} />
+                  <YAxis {...axisProps} domain={['auto', 'auto']} width={48} />
+                  <Tooltip
+                    content={({ active, payload }) => {
+                      const p = active && payload?.[0]?.payload
+                      return p ? (
+                        <ChartTooltipBox
+                          title={dateTime(p.at)}
+                          rows={[
+                            { label: 'Elo', value: p.elo, color: 'var(--series-1)' },
+                            { label: 'Уровень', value: p.level ?? '—' },
+                            { label: 'Подтверждено', value: p.confirmed_at ? dateTime(p.confirmed_at) : '—' },
+                          ]}
+                        />
+                      ) : null
+                    }}
+                  />
+                  <Line type="stepAfter" dataKey="elo" stroke="var(--series-1)" strokeWidth={2} dot={{ r: 4, fill: 'var(--series-1)', stroke: 'var(--card)', strokeWidth: 2 }} isAnimationActive={false} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
           <CardTitle>Как считаются оценки</CardTitle>
         </CardHeader>
         <CardContent>
           <pre className="text-xs leading-relaxed whitespace-pre-wrap text-muted-foreground">{data.method.trim()}</pre>
-          {data.snapshots.length > 0 && (
-            <p className="mt-3 text-xs text-muted-foreground">
-              Зафиксированные официальные значения: {data.snapshots.map((s) => `${s.elo} (${dateTime(s.at)})`).join(', ')}
-            </p>
-          )}
+
         </CardContent>
       </Card>
     </div>
