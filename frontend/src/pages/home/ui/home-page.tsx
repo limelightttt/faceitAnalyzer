@@ -20,16 +20,28 @@ const FEATURES = [
   { icon: GraduationCap, title: 'IMPROVE — как расти', text: 'Цели по измеренным слабым местам, недельные сводки, ошибки из демок.' },
 ]
 
+export function RateLimitNote() {
+  const h = useHealth()
+  const rl = h.data?.rate_limit
+  if (!rl?.limited) return null
+  return (
+    <div className="rounded-lg border border-warning/50 bg-warning/10 px-3 py-2 text-xs">
+      Лимит запросов FACEIT API исчерпан. Новые данные появятся примерно через {Math.ceil(rl.retry_in_s / 60)} мин
+      {rl.retry_at && ` (после ${new Date(rl.retry_at).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })})`}. Уже загруженное доступно из кэша.
+    </div>
+  )
+}
+
 function HealthNote() {
   const h = useHealth()
   if (!h.data) return null
   if (!h.data.api_key_configured)
     return <div className="rounded-lg border border-critical/40 bg-critical/5 px-3 py-2 text-xs">FACEIT Data API не настроен (FACEIT_API_KEY). Статистика и разведка недоступны, работают только демки.</div>
-  return null
+  return <RateLimitNote />
 }
 
 function Dashboard({ nickname }: { nickname: string }) {
-  const ov = useOverview(nickname, 100)
+  const ov = useOverview(nickname, 50)
   const coach = useCoach(true)
   const pm = usePredictionMetrics(true)
   const hist = useHistory(true)
@@ -47,7 +59,10 @@ function Dashboard({ nickname }: { nickname: string }) {
             </div>
           )}
         </div>
-        <ScoutLaunch className="w-full md:max-w-xl" />
+        <div className="w-full space-y-2 md:max-w-xl">
+          <ScoutLaunch />
+          <PlayerSearch />
+        </div>
       </section>
       {ov.isLoading ? <Skeleton className="h-28" /> : ov.error ? <ErrorState error={ov.error} /> : ov.data && <PlayerKpis data={ov.data} />}
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
@@ -143,7 +158,10 @@ export function HomePage() {
       <section className="relative overflow-hidden rounded-2xl border bg-card p-6 md:p-10">
         <div className="pointer-events-none absolute -top-24 -right-24 size-72 rounded-full bg-primary/15 blur-3xl" />
         <div className="relative max-w-2xl space-y-5">
-          <h1 className="text-3xl font-semibold tracking-tight md:text-4xl">FACEIT Intelligence</h1>
+          <div>
+            <h1 className="text-3xl font-semibold tracking-tight md:text-4xl">FACEIT Intelligence</h1>
+            <div className="mt-1 text-sm text-subtle-foreground">by limelightttt</div>
+          </div>
           <p className="text-muted-foreground">
             Разведка перед матчем, разбор после, рост на дистанции. Только реальные данные FACEIT и ваших демок — с явной пометкой, где факт, где оценка, а где гипотеза.
           </p>

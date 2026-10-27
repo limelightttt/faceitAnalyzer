@@ -6,7 +6,7 @@ import type { Faction, ScoutJob, ScoutPlayer } from '@/entities/scout'
 import { FeedbackButtons } from '@/features/feedback'
 import { cn } from '@/shared/lib/cn'
 import { fmt, mapName, pct } from '@/shared/lib/format'
-import { Badge, Card, CardContent, CardHeader, CardTitle, Hint } from '@/shared/ui'
+import { Avatar, Badge, Card, CardContent, CardHeader, CardTitle, Hint } from '@/shared/ui'
 import { SkillLevel } from '@/widgets/player-header'
 
 import { AREA_LABEL, FACTION_COLOR, LEVEL_LABEL, orderedFactions, teamLabel } from './shared'
@@ -118,9 +118,7 @@ function PlayerCard({ p, faction, job }: { p: ScoutPlayer; faction: Faction; job
       <div className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 items-center gap-3">
           <div className="relative">
-            <div className="flex size-10 items-center justify-center overflow-hidden rounded-lg bg-card-2 text-sm font-semibold">
-              {p.avatar ? <img src={p.avatar} alt="" className="size-full object-cover" /> : p.nickname[0]?.toUpperCase()}
-            </div>
+            <Avatar src={p.avatar} name={p.nickname} className="size-10 rounded-lg bg-card-2 text-sm font-semibold" />
             <span className="absolute -bottom-1 -left-1 size-3 rounded-full border-2 border-card" style={{ background: FACTION_COLOR[faction] }} />
           </div>
           <div className="min-w-0">

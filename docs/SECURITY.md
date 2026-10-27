@@ -5,8 +5,9 @@
   удаляется (нет session fixation). Токены в localStorage/JS не попадают.
 * **CSRF**: synchronizer token в серверной сессии, SPA отправляет `X-CSRF-Token` на POST/PUT/DELETE; дополнительно проверяется
   `Origin`. `SameSite=Lax` нужен для возврата с OAuth/OpenID.
-* **Steam OpenID 2.0**: проверка `op_endpoint`, точного `return_to`, формата `claimed_id`, подписи через
-  `check_authentication`; наш `state` одноразовый и привязан к браузеру отдельной cookie (защита от login CSRF и replay).
+* **Steam OpenID 2.0**: проверка `openid.ns`, `op_endpoint`, точного `return_to`, формата `claimed_id`, подписи через
+  `check_authentication` **и того, что подписаны `claimed_id`, `identity`, `return_to`, `op_endpoint`, `response_nonce`,
+  `assoc_handle`** (иначе злоумышленник мог бы подставить чужой SteamID в неподписанное поле — исправлено в Private Beta); наш `state` одноразовый и привязан к браузеру отдельной cookie (защита от login CSRF и replay).
 * **FACEIT Connect**: authorization code + PKCE (S256), `client_secret_basic` только на сервере, одноразовый `state` с привязкой
   к браузеру. Access token используется один раз для userinfo и не хранится.
 * **Привязка аккаунтов**: identity (provider, subject) принадлежит ровно одной учётной записи; уже привязанная к другой
@@ -15,6 +16,12 @@
 * **Прочее**: rate limiting на вход, загрузку демок и разведку; open redirect закрыт (`return_to` только относительный путь);
   CORS — только явные origin; заголовки `X-Content-Type-Options`, `X-Frame-Options: DENY`, `Referrer-Policy`, `Cache-Control:
   no-store` для API. Ключ FACEIT используется только сервером; в клиентской сборке нет секретов.
+* **Доступ к данным** (private beta): игроки, разведка, демки и карты требуют входа (`REQUIRE_LOGIN=true`, по умолчанию).
+  Опциональный `BETA_ALLOWLIST` (SteamID64 / FACEIT id / ник) — остальным вход отклоняется. Отчёты разведки, прогнозы,
+  отзывы и демки видит и меняет только владелец (чужой id → 404, а не 403, чтобы не раскрывать существование).
+* **Демки**: загрузка потоково с лимитом размера и SHA-256; распаковка `.bz2/.gz/.zst` с ограничением итогового размера
+  (защита от «zip-бомб»), имя файла санитизируется, id проверяется регуляркой (нет path traversal); разбор в отдельном
+  процессе с таймаутом, зависший разбор убивается.
 * **Тестовый вход** `/api/auth/dev-login` отвечает 404, если не включён `AUTH_DEV_LOGIN` *и* приложение не на localhost по http.
 
 Что не проверено вживую: реальные Steam и FACEIT OAuth не были доступны из облачного окружения разработки; потоки покрыты

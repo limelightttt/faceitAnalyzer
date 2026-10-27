@@ -1,4 +1,4 @@
-/* Phase II browser E2E against the MOCK stack (scripts/run_mock_stack.sh): anonymous home without demo
+/* Phase II browser E2E against the MOCK stack (scripts/run_mock_stack.sh): sign-in screen for anonymous users, no demo
  * datasets, test-only login, player page, Match Scout from a matchroom URL, feedback, prediction snapshot,
  * match finish (mock admin) -> outcome, settings persistence, coach goal, demo upload -> tactical evidence.
  * Usage: node scripts/e2e_phase2.cjs [baseUrl] [mockUrl] [demoPath] */
@@ -22,7 +22,7 @@ const ok = (c, m) => {
   const up = await (await fetch(`${MOCK}/admin/upcoming`)).json()
 
   await page.goto(BASE + '/')
-  await page.getByRole('heading', { name: 'FACEIT Intelligence' }).waitFor()
+  await page.getByRole('heading', { name: 'Вход' }).waitFor()
   const body = await page.textContent('body')
   ok(!/sim_player|Синтетика|synthetic/i.test(body), 'no synthetic datasets/accounts in the production UI')
   ok(await page.getByText('Войти через Steam').isVisible(), 'Steam login offered to anonymous users')

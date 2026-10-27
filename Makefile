@@ -1,4 +1,4 @@
-.PHONY: install dev backend frontend build serve test lint sample-demo radars mock-stack e2e live-check
+.PHONY: install dev backend frontend build serve test lint sample-demo radars mock-stack e2e e2e-beta live-check
 
 install:            ## install backend (uv) and frontend (npm) dependencies
 	cd backend && uv sync
@@ -35,6 +35,9 @@ mock-stack: build   ## API+UI on :8000 against a MOCK FACEIT API on :8901 (test 
 
 e2e:                ## browser E2E against a running `make mock-stack` (fresh stack per run)
 	node scripts/e2e_phase2.cjs http://localhost:8000 http://127.0.0.1:8901
+
+e2e-beta: build     ## self-contained private-beta browser E2E (starts mock + app itself, restarts, outage)
+	node scripts/e2e_beta.cjs
 
 live-check:         ## verify the real FACEIT API with your key: make live-check NICK=yournick [ROOM=url]
 	cd backend && uv run python scripts/faceit_live_check.py $(NICK) $(ROOM)

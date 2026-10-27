@@ -12,6 +12,7 @@ import httpx
 
 OPENID_NS = "http://specs.openid.net/auth/2.0"
 IDENTIFIER_SELECT = "http://specs.openid.net/auth/2.0/identifier_select"
+REQUIRED_SIGNED = {"op_endpoint", "claimed_id", "identity", "return_to", "response_nonce", "assoc_handle"}
 CLAIMED_RE = re.compile(r"^https://steamcommunity\.com/openid/id/(7656119\d{10})$")
 
 
@@ -46,6 +47,14 @@ async def verify(
     m = CLAIMED_RE.match(params.get("openid.claimed_id", ""))
     if not m or params.get("openid.identity") != params.get("openid.claimed_id"):
         raise SteamVerificationError("Некорректный claimed_id")
+    if params.get("openid.ns") != OPENID_NS:
+        raise SteamVerificationError("Неверная версия OpenID")
+    # OpenID 2.0 §11.4: check_authentication only proves the *signed* fields. If claimed_id/return_to were not
+    # signed, an attacker could take their own valid assertion and swap in someone else's SteamID.
+    signed = set(params.get("openid.signed", "").split(","))
+    missing = REQUIRED_SIGNED - signed
+    if missing:
+        raise SteamVerificationError("Ответ Steam не подписывает обязательные поля")
     check = {k: v for k, v in params.items() if k.startswith("openid.")}
     check["openid.mode"] = "check_authentication"
     async with httpx.AsyncClient(timeout=15, transport=transport) as client:

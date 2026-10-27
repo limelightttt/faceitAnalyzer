@@ -36,9 +36,9 @@ def _profile(db: Session, auth: Auth) -> GameProfile:
     return gp
 
 
-def _demo_analyses(state: AppState) -> list[tuple[str, str, dict]]:
+def _demo_analyses(state: AppState, user_id: int) -> list[tuple[str, str, dict]]:
     out = []
-    for m in state.demos.list():
+    for m in state.demos.list(user_id):
         if m["status"] == "done":
             a = state.demos.analysis(m["id"])
             if a:
@@ -89,7 +89,7 @@ async def overview(
     ds = await load_player_dataset(state.provider, gp.nickname, 100, state.settings.data_dir, state.db)
     ins = insights.compute_insights(ds)
     steam = gp.steam_id or ds.profile.steam_id
-    rows = coach.demo_rows(_demo_analyses(state), steam)
+    rows = coach.demo_rows(_demo_analyses(state, auth.user.id), steam)
     goals = db.scalars(
         select(Goal).where(Goal.user_id == auth.user.id).order_by(Goal.created_at.desc())
     ).all()
@@ -168,7 +168,7 @@ async def create_goal(
         raise HTTPException(400, "Для этой цели нужна карта")
     gp = _profile(db, auth)
     if meta["source"] == "demo":
-        rows = coach.demo_rows(_demo_analyses(state), gp.steam_id)
+        rows = coach.demo_rows(_demo_analyses(state, auth.user.id), gp.steam_id)
         vals = [r[body.metric] for r in rows if r[body.metric] is not None]
         if len(vals) < 2:
             raise HTTPException(409, "Для цели по демкам нужно минимум 2 разобранные демки с вашим SteamID")

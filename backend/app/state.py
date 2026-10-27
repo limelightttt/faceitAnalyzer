@@ -70,3 +70,12 @@ def require_user(auth: Auth = Depends(get_auth)) -> Auth:
     if auth.user is None:
         raise HTTPException(401, "Требуется вход")
     return auth
+
+
+def require_access(auth: Auth = Depends(get_auth), state: AppState = Depends(get_state)) -> Auth:
+    """Data endpoints: open on a developer box, sign-in required for the private beta (REQUIRE_LOGIN)."""
+    from fastapi import HTTPException
+
+    if state.settings.require_login and auth.user is None:
+        raise HTTPException(401, "Войдите, чтобы пользоваться FACEIT Intelligence")
+    return auth
