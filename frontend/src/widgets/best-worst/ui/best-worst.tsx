@@ -66,7 +66,7 @@ export function BestWorst({ data, nickname, search }: { data: BW; nickname: stri
   if (data.n < 2) return <EmptyState title="Нужно минимум 2 матча со статистикой" />
   const c = data.context
   return (
-    <div className="grid gap-4 xl:grid-cols-[1fr_1.2fr]">
+    <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1fr_1.2fr]">
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-1">
         <Card>
           <CardHeader>

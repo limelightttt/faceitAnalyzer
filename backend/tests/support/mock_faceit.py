@@ -88,6 +88,10 @@ def create_mock(world=None) -> FastAPI:
             raise HTTPException(404)
         return w["stats"][mid]
 
+    @app.get("/admin/upcoming")
+    def upcoming():
+        return {"match_id": w["upcoming"], "me": w["me"].nick}
+
     @app.post("/admin/finish/{mid}")
     async def finish(mid: str, request: Request):
         d = w["details"][mid]

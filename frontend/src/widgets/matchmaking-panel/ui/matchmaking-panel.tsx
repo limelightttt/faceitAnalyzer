@@ -200,7 +200,7 @@ export function MatchmakingPanel({ data }: { data: Matchmaking }) {
           </div>
         </div>
       </div>
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         {data.tests.map((t) => (
           <TestCard key={t.id} t={t} />
         ))}

@@ -66,7 +66,7 @@ export function DemoPlayerInsights({ data, focus, onFocus }: { data: DemoAnalysi
         {!p ? (
           <EmptyState title="Выберите игрока" />
         ) : (
-          <div className="grid gap-6 lg:grid-cols-2">
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
             <div className="space-y-5">
               <Comparison p={p} others={data.players.filter((o) => o.steamid !== p.steamid)} />
               <div>

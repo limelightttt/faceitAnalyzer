@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, Table, TBody
 export function MatchScoreboard({ detail }: { detail: MatchDetail }) {
   const { match } = detail
   return (
-    <div className="grid gap-4 xl:grid-cols-2">
+    <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
       {match.teams.map((team, ti) => {
         const won = match.winner_team_id === team.team_id
         return (

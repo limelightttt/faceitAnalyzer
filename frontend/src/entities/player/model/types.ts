@@ -21,6 +21,7 @@ export interface DataQuality {
   has_team_elo: boolean
   has_official_elo: boolean
   notes: string[]
+  freshness?: { requests: number; from_cache: number; stale: boolean; oldest: string | null }
 }
 
 export interface MatchRow {
@@ -258,9 +259,3 @@ export interface MatchDetail {
   }
 }
 
-export interface Dataset {
-  dataset: string
-  kind: DataSource
-  description: string
-  players: string[]
-}

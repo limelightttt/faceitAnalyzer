@@ -31,10 +31,10 @@ export function MapStats({ maps }: { maps: MapStat[] }) {
       </CardHeader>
       <CardContent className="space-y-2.5">
         {maps.map((m) => (
-          <div key={m.map} className="grid grid-cols-[96px_1fr_auto] items-center gap-3 text-sm">
+          <div key={m.map} className="grid grid-cols-[76px_minmax(0,1fr)_auto] items-center gap-2 text-sm sm:gap-3">
             <MapChip map={m.map} />
             <WinRateBar m={m} />
-            <div className="w-36 text-right text-xs text-muted-foreground tabular">
+            <div className="text-right text-xs text-muted-foreground tabular sm:w-36">
               <span className="font-medium text-foreground">{pct(m.win_rate)}</span> · {m.matches} м · R {fmt(m.rating)}
             </div>
           </div>
