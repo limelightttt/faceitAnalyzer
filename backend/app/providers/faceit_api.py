@@ -122,8 +122,28 @@ class FaceitApiProvider:
             "retry_at": datetime.fromtimestamp(self._cooldown_until, UTC).isoformat() if left > 0 else None,
         }
 
+    @staticmethod
+    def _read_cache(cp: Path) -> dict[str, Any] | None:
+        """{"at": epoch, "body": payload}. Files written by the first app version contain the bare payload:
+        they are still valid (finished-match data never changes) and use the file mtime as fetch time.
+        Unreadable files are dropped instead of breaking the request."""
+        try:
+            raw = json.loads(cp.read_text("utf-8"))
+        except (OSError, ValueError):
+            cp.unlink(missing_ok=True)
+            return None
+        if isinstance(raw, dict) and set(raw) == {"at", "body"}:
+            return raw
+        return {"at": cp.stat().st_mtime, "body": raw}
+
     def _serve_cache(self, cp: Path, path: str) -> dict[str, Any] | None:
-        cached = json.loads(cp.read_text("utf-8"))
+        cached = self._read_cache(cp)
+        if cached is None:
+            raise (
+                RateLimited(self._cooldown_until)
+                if self._cooldown_until > time.time()
+                else ProviderError("FACEIT API недоступен, сохранённых данных нет", status=503)
+            )
         record_fetch(FetchRecord(path, datetime.fromtimestamp(cached["at"], UTC), True, True))
         return cached["body"]
 
@@ -137,8 +157,8 @@ class FaceitApiProvider:
     ) -> dict[str, Any] | None:
         key = path + "?" + json.dumps(params or {}, sort_keys=True)
         cp = self._cache_path(key)
-        if cp.exists():
-            cached = json.loads(cp.read_text("utf-8"))
+        cached = self._read_cache(cp) if cp.exists() else None
+        if cached is not None:
             eff_ttl = ttl_fn(cached["body"]) if ttl_fn and cached.get("body") is not None else ttl
             if eff_ttl is None or time.time() - cached["at"] < eff_ttl:
                 record_fetch(FetchRecord(path, datetime.fromtimestamp(cached["at"], UTC), True, False))

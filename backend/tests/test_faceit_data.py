@@ -193,3 +193,32 @@ async def test_dataset_survives_rate_limit_mid_way(tmp_path):
     )
     ds = await load_player_dataset(api, "scout_me", 40, tmp_path)
     assert 0 < ds.quality.matches_loaded and any("Лимит запросов" in n for n in ds.quality.notes)
+
+
+async def test_reads_cache_written_by_first_app_version(tmp_path):
+    """Phase 1 stored the bare payload; it must still be served (regression: KeyError 'at' -> HTTP 500)."""
+    import hashlib
+
+    def handler(req):
+        raise AssertionError("must be served from the legacy cache")
+
+    api = FaceitApiProvider(
+        "k", "https://open.faceit.com/data/v4", tmp_path, rate=1000, transport=httpx.MockTransport(handler)
+    )
+    key = "/matches/m1?" + json.dumps({}, sort_keys=True)
+    (tmp_path / (hashlib.sha1(key.encode()).hexdigest() + ".json")).write_text(
+        json.dumps({"match_id": "m1", "status": "FINISHED"})
+    )
+    assert (await api.get_match("m1"))["match_id"] == "m1"
+    # a corrupt cache file is dropped and refetched instead of crashing
+    key2 = "/matches/m2?" + json.dumps({}, sort_keys=True)
+    bad = tmp_path / (hashlib.sha1(key2.encode()).hexdigest() + ".json")
+    bad.write_text("{not json")
+    api2 = FaceitApiProvider(
+        "k",
+        "https://open.faceit.com/data/v4",
+        tmp_path,
+        rate=1000,
+        transport=httpx.MockTransport(lambda r: httpx.Response(200, json={"match_id": "m2"})),
+    )
+    assert (await api2.get_match("m2"))["match_id"] == "m2"
