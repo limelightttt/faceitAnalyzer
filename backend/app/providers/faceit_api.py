@@ -104,7 +104,7 @@ class FaceitApiProvider:
         self._sem = asyncio.Semaphore(concurrency)
         self._cache_dir = cache_dir
         self._profile_ttl = profile_ttl
-        self._inflight: dict[str, asyncio.Future] = {}
+        self._inflight: dict[str, asyncio.Task] = {}
         self._cooldown_until = 0.0
         cache_dir.mkdir(parents=True, exist_ok=True)
 
@@ -168,32 +168,27 @@ class FaceitApiProvider:
             if cp.exists():
                 return self._serve_cache(cp, path)
             raise RateLimited(self._cooldown_until)
-        # de-duplicate identical concurrent requests (e.g. two widgets loading the same player)
-        if key in self._inflight:
-            return await asyncio.shield(self._inflight[key])
-        fut: asyncio.Future = asyncio.get_running_loop().create_future()
-        self._inflight[key] = fut
+        # De-duplicate identical concurrent requests. The HTTP call runs in its own task: if one caller is
+        # cancelled (e.g. the browser navigated away) the shared request continues for the other waiters.
+        task = self._inflight.get(key)
+        if task is None:
+            task = asyncio.ensure_future(self._fetch_and_store(path, params, allow_404, cp))
+            self._inflight[key] = task
+            task.add_done_callback(lambda t, k=key: (self._inflight.pop(k, None), t.cancelled() or t.exception()))
         try:
-            body = await self._fetch(path, params, allow_404)
-            if body is not None:  # never cache "not found": e.g. /stats appears once a match finishes
-                cp.write_text(json.dumps({"at": time.time(), "body": body}), "utf-8")
-            record_fetch(FetchRecord(path, datetime.now(UTC), False, False))
-            fut.set_result(body)
-            return body
+            body = await asyncio.shield(task)
         except ProviderError as exc:
             if cp.exists() and (exc.status >= 500 or exc.status == 429):
-                body = self._serve_cache(cp, path)
-                fut.set_result(body)
-                return body
-            fut.set_exception(exc)
-            fut.exception()  # mark retrieved
+                return self._serve_cache(cp, path)
             raise
-        except BaseException as exc:  # unexpected: never leave concurrent waiters hanging
-            fut.set_exception(exc)
-            fut.exception()
-            raise
-        finally:
-            self._inflight.pop(key, None)
+        record_fetch(FetchRecord(path, datetime.now(UTC), False, False))
+        return body
+
+    async def _fetch_and_store(self, path, params, allow_404, cp: Path) -> dict[str, Any] | None:
+        body = await self._fetch(path, params, allow_404)
+        if body is not None:  # never cache "not found": e.g. /stats appears once a match finishes
+            cp.write_text(json.dumps({"at": time.time(), "body": body}), "utf-8")
+        return body
 
     async def _fetch(
         self, path: str, params: dict[str, Any] | None, allow_404: bool

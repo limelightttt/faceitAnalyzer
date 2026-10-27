@@ -18,6 +18,7 @@ from .features import PlayerFeatures, build_features, norm_map
 
 ALGO_VERSION = "scout-v1 (elo-baseline-v1, risk-v1, chemistry-v1)"
 RECENT_N = 30
+PLAYER_TIMEOUT_S = 90
 HISTORY_N = 30
 PRE_MATCH = {"READY", "VOTING", "CONFIGURING", "SCHEDULED", "CHECK_IN", "SUBSTITUTION", "MANUAL_RESULT"}
 FINISHED = {"FINISHED"}
@@ -32,10 +33,12 @@ async def _player_bundle(provider, roster: dict[str, Any], faction: str) -> Play
 
     async def safe(coro, label, default):
         try:
-            return await coro
+            return await asyncio.wait_for(coro, PLAYER_TIMEOUT_S)
         except ProviderError as exc:
             errors.append(f"{label}: {exc}")
-            return default
+        except TimeoutError:
+            errors.append(f"{label}: FACEIT не ответил за {PLAYER_TIMEOUT_S} с")
+        return default
 
     profile, lifetime, recent, history = await asyncio.gather(
         safe(provider.get_player_by_id(pid), "профиль", None),
@@ -342,6 +345,9 @@ def start_job(state, match_id: str, user_id: int | None, user_player_id: str | N
                         )
         except ProviderError as exc:
             _fail(state, sid, str(exc))
+        except asyncio.CancelledError:
+            _fail(state, sid, "Разведка прервана (остановка сервера) — запустите снова")
+            raise
         except Exception as exc:  # unexpected analysis failure: keep the job inspectable
             _fail(state, sid, f"Внутренняя ошибка анализа: {exc.__class__.__name__}: {exc}")
 

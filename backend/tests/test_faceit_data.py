@@ -222,3 +222,30 @@ async def test_reads_cache_written_by_first_app_version(tmp_path):
         transport=httpx.MockTransport(lambda r: httpx.Response(200, json={"match_id": "m2"})),
     )
     assert (await api2.get_match("m2"))["match_id"] == "m2"
+
+
+async def test_cancelled_caller_does_not_break_joined_waiters(tmp_path):
+    """Regression: a request abandoned by the browser cancelled the shared FACEIT call and killed the
+    Match Scout job that had joined it (job stuck at 'running' forever)."""
+    import asyncio
+
+    gate = asyncio.Event()
+
+    async def slow_handler(request):
+        await gate.wait()
+        return httpx.Response(200, json={"player_id": "p1", "nickname": "x"})
+
+    class T(httpx.AsyncBaseTransport):
+        async def handle_async_request(self, request):
+            return await slow_handler(request)
+
+    api = FaceitApiProvider("k", "https://open.faceit.com/data/v4", tmp_path, rate=1000, transport=T())
+    first = asyncio.create_task(api.get_player_by_id("p1"))
+    await asyncio.sleep(0.01)
+    second = asyncio.create_task(api.get_player_by_id("p1"))
+    await asyncio.sleep(0.01)
+    first.cancel()
+    await asyncio.sleep(0.01)
+    gate.set()
+    assert (await asyncio.wait_for(second, 5))["player_id"] == "p1"
+    assert api._inflight == {}
