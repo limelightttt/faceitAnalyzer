@@ -5,6 +5,7 @@ import { useSampleSize } from '@/features/sample-size'
 import { cn } from '@/shared/lib/cn'
 import { ErrorState, PageSkeleton } from '@/shared/ui'
 import { Button } from '@/shared/ui'
+import { RateLimitNote } from '@/pages/home/ui/home-page'
 import { PlayerHeader } from '@/widgets/player-header'
 
 const TABS = [
@@ -29,7 +30,9 @@ export function PlayerLayout() {
   if (isLoading) return <PageSkeleton />
   if (error || !data)
     return (
-      <ErrorState
+      <div className="space-y-3">
+        <RateLimitNote />
+        <ErrorState
         error={error}
         action={
           <Button variant="secondary" size="sm" onClick={() => refetch()}>
@@ -37,6 +40,7 @@ export function PlayerLayout() {
           </Button>
         }
       />
+      </div>
     )
   const base = `/players/${encodeURIComponent(nickname)}`
   return (

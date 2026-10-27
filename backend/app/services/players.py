@@ -7,7 +7,7 @@ from pathlib import Path
 from ..analytics.party import infer_parties
 from ..domain import DataQuality, PlayerDataset, PlayerMatch
 from ..faceit_normalize import build_match, normalize_profile
-from ..providers.base import FaceitProvider, FetchRecord, fetch_log, freshness_summary
+from ..providers.base import FaceitProvider, FetchRecord, ProviderError, fetch_log, freshness_summary
 
 _CACHE: dict[tuple[str, str, int], tuple[float, PlayerDataset]] = {}
 _CACHE_TTL = 120.0
@@ -71,7 +71,8 @@ async def load_player_dataset(
             "FACEIT API сейчас недоступен — показаны сохранённые ранее данные "
             f"(самые старые от {ds.quality.freshness['oldest'][:16].replace('T', ' ')} UTC)",
         )
-    _CACHE[key] = (time.time(), ds)
+    if not any(n.startswith("Часть данных матчей не загружена") for n in ds.quality.notes):
+        _CACHE[key] = (time.time(), ds)
     return ds
 
 
@@ -81,9 +82,18 @@ async def _load(provider: FaceitProvider, nickname: str, limit: int, db) -> Play
     profile = normalize_profile(raw_profile)
     history = await provider.get_history(profile.player_id, limit)
 
+    skipped: list[str] = []
+
     async def fetch(item: dict) -> tuple[dict, dict | None, dict | None]:
+        async def one(coro):
+            try:
+                return await coro
+            except ProviderError as exc:  # e.g. rate limit mid-way: keep what we have, report the gap
+                skipped.append(str(exc))
+                return None
+
         details, stats = await asyncio.gather(
-            provider.get_match(item["match_id"]), provider.get_match_stats(item["match_id"])
+            one(provider.get_match(item["match_id"])), one(provider.get_match_stats(item["match_id"]))
         )
         return item, details, stats
 
@@ -127,6 +137,8 @@ async def _load(provider: FaceitProvider, nickname: str, limit: int, db) -> Play
     if source == "faceit_api":
         record_snapshot(db, profile.player_id, profile.elo, profile.skill_level)
 
+    if skipped:
+        notes.insert(0, f"Часть данных матчей не загружена ({len(skipped)} запросов): {skipped[0]}")
     has_ts = any(pm.match.started_at for pm in matches)
     has_elo = any(pm.team_avg_elo is not None for pm in matches)
     if not has_ts:

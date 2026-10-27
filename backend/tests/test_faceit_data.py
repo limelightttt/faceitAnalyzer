@@ -130,3 +130,66 @@ async def test_api_serves_stale_cache_when_live_api_fails(tmp_path, monkeypatch)
     assert freshness_summary(log)["stale"] is True
     with pytest.raises(ProviderError):
         await api.get_player("never-cached")
+
+
+async def test_rate_limit_sets_cooldown_and_reports_when(tmp_path, monkeypatch):
+    from app.providers.faceit_api import RateLimited
+
+    calls = {"n": 0}
+
+    def handler(req):
+        calls["n"] += 1
+        if req.url.path.endswith("/players") and req.url.params.get("nickname") == "cached":
+            return httpx.Response(200, json={"player_id": "p1", "nickname": "cached"})
+        return httpx.Response(429, headers={"Retry-After": "120"})
+
+    api = FaceitApiProvider(
+        "k",
+        "https://open.faceit.com/data/v4",
+        tmp_path,
+        rate=1000,
+        transport=httpx.MockTransport(handler),
+        profile_ttl=0,
+    )
+    assert (await api.get_player("cached"))["player_id"] == "p1"
+    with pytest.raises(RateLimited) as e:
+        await api.get_match("m1")
+    assert e.value.status == 429 and "мин" in str(e.value)
+    n = calls["n"]
+    # during the cooldown the API is not called again; expired cache is served instead
+    assert (await api.get_player("cached"))["player_id"] == "p1"
+    with pytest.raises(RateLimited):
+        await api.get_match("m2")
+    assert calls["n"] == n
+    assert api.rate_limit_status()["limited"] and 100 < api.rate_limit_status()["retry_in_s"] <= 120
+
+
+def test_retry_after_parsing():
+    from app.providers.faceit_api import retry_after_seconds
+
+    assert retry_after_seconds({"Retry-After": "30"}, 5) == 30
+    assert 50 < retry_after_seconds({"Retry-After": "Wed, 21 Oct 2099 07:28:00 GMT"}, 5)
+    assert retry_after_seconds({"Retry-After": "garbage"}, 7) == 7
+    assert retry_after_seconds({}, 60) == 60
+
+
+async def test_dataset_survives_rate_limit_mid_way(tmp_path):
+    from app.services.players import load_player_dataset
+    from tests.support.mock_faceit import create_mock
+
+    mock = create_mock()
+    inner = httpx.ASGITransport(app=mock)
+    state = {"n": 0}
+
+    class Flaky(httpx.AsyncBaseTransport):
+        async def handle_async_request(self, request):
+            state["n"] += 1
+            if "/matches/" in request.url.path and state["n"] > 25:
+                return httpx.Response(429, headers={"Retry-After": "600"})
+            return await inner.handle_async_request(request)
+
+    api = FaceitApiProvider(
+        "test-key", "http://mock/data/v4", tmp_path, rate=1000, concurrency=1, transport=Flaky()
+    )
+    ds = await load_player_dataset(api, "scout_me", 40, tmp_path)
+    assert 0 < ds.quality.matches_loaded and any("Лимит запросов" in n for n in ds.quality.notes)

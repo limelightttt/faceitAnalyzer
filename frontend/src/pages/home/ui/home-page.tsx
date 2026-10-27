@@ -20,16 +20,28 @@ const FEATURES = [
   { icon: GraduationCap, title: 'IMPROVE — как расти', text: 'Цели по измеренным слабым местам, недельные сводки, ошибки из демок.' },
 ]
 
+export function RateLimitNote() {
+  const h = useHealth()
+  const rl = h.data?.rate_limit
+  if (!rl?.limited) return null
+  return (
+    <div className="rounded-lg border border-warning/50 bg-warning/10 px-3 py-2 text-xs">
+      Лимит запросов FACEIT API исчерпан. Новые данные появятся примерно через {Math.ceil(rl.retry_in_s / 60)} мин
+      {rl.retry_at && ` (после ${new Date(rl.retry_at).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })})`}. Уже загруженное доступно из кэша.
+    </div>
+  )
+}
+
 function HealthNote() {
   const h = useHealth()
   if (!h.data) return null
   if (!h.data.api_key_configured)
     return <div className="rounded-lg border border-critical/40 bg-critical/5 px-3 py-2 text-xs">FACEIT Data API не настроен (FACEIT_API_KEY). Статистика и разведка недоступны, работают только демки.</div>
-  return null
+  return <RateLimitNote />
 }
 
 function Dashboard({ nickname }: { nickname: string }) {
-  const ov = useOverview(nickname, 100)
+  const ov = useOverview(nickname, 50)
   const coach = useCoach(true)
   const pm = usePredictionMetrics(true)
   const hist = useHistory(true)

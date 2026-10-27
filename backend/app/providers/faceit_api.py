@@ -12,6 +12,7 @@ import hashlib
 import json
 import time
 from datetime import UTC, datetime
+from email.utils import parsedate_to_datetime
 from pathlib import Path
 from typing import Any
 
@@ -27,6 +28,43 @@ TTL_PROFILE = 600.0
 TTL_STATS = 1800.0
 TTL_HISTORY = 600.0
 TTL_LIVE_MATCH = 20.0
+
+
+class RateLimited(ProviderError):
+    """FACEIT answered 429. We stop calling the API until `retry_at` and report it to the user."""
+
+    def __init__(self, retry_at: float):
+        self.retry_at = retry_at
+        left = max(0, retry_at - time.time())
+        when = datetime.fromtimestamp(retry_at, UTC).strftime("%H:%M:%S UTC")
+        mins = f"{left / 60:.0f} мин" if left >= 90 else f"{left:.0f} с"
+        super().__init__(
+            f"Лимит запросов FACEIT API исчерпан. Повторите примерно через {mins} (после {when}). "
+            "Уже загруженные данные доступны из кэша.",
+            status=429,
+        )
+
+
+def retry_after_seconds(headers, default: float) -> float:
+    """Retry-After may be seconds or an HTTP date; some APIs use X-RateLimit-Reset (epoch or seconds)."""
+    raw = headers.get("Retry-After")
+    if raw:
+        try:
+            return max(1.0, float(raw))
+        except ValueError:
+            try:
+                dt = parsedate_to_datetime(raw)
+                return max(1.0, (dt - datetime.now(UTC)).total_seconds())
+            except (TypeError, ValueError):
+                pass
+    reset = headers.get("X-RateLimit-Reset") or headers.get("RateLimit-Reset")
+    if reset:
+        try:
+            v = float(reset)
+            return max(1.0, v - time.time()) if v > 1e9 else max(1.0, v)
+        except ValueError:
+            pass
+    return default
 
 
 class _RateLimiter:
@@ -67,6 +105,7 @@ class FaceitApiProvider:
         self._cache_dir = cache_dir
         self._profile_ttl = profile_ttl
         self._inflight: dict[str, asyncio.Future] = {}
+        self._cooldown_until = 0.0
         cache_dir.mkdir(parents=True, exist_ok=True)
 
     def source_for(self, nickname: str) -> DataSource:
@@ -74,6 +113,19 @@ class FaceitApiProvider:
 
     def _cache_path(self, key: str) -> Path:
         return self._cache_dir / (hashlib.sha1(key.encode()).hexdigest() + ".json")
+
+    def rate_limit_status(self) -> dict[str, Any]:
+        left = self._cooldown_until - time.time()
+        return {
+            "limited": left > 0,
+            "retry_in_s": max(0, round(left)),
+            "retry_at": datetime.fromtimestamp(self._cooldown_until, UTC).isoformat() if left > 0 else None,
+        }
+
+    def _serve_cache(self, cp: Path, path: str) -> dict[str, Any] | None:
+        cached = json.loads(cp.read_text("utf-8"))
+        record_fetch(FetchRecord(path, datetime.fromtimestamp(cached["at"], UTC), True, True))
+        return cached["body"]
 
     async def _get(
         self,
@@ -91,6 +143,11 @@ class FaceitApiProvider:
             if eff_ttl is None or time.time() - cached["at"] < eff_ttl:
                 record_fetch(FetchRecord(path, datetime.fromtimestamp(cached["at"], UTC), True, False))
                 return cached["body"]
+        if self._cooldown_until > time.time():
+            # FACEIT told us to back off: never hammer the API, serve what we already have
+            if cp.exists():
+                return self._serve_cache(cp, path)
+            raise RateLimited(self._cooldown_until)
         # de-duplicate identical concurrent requests (e.g. two widgets loading the same player)
         if key in self._inflight:
             return await asyncio.shield(self._inflight[key])
@@ -104,13 +161,16 @@ class FaceitApiProvider:
             fut.set_result(body)
             return body
         except ProviderError as exc:
-            if cp.exists() and exc.status >= 500:
-                cached = json.loads(cp.read_text("utf-8"))
-                record_fetch(FetchRecord(path, datetime.fromtimestamp(cached["at"], UTC), True, True))
-                fut.set_result(cached["body"])
-                return cached["body"]
+            if cp.exists() and (exc.status >= 500 or exc.status == 429):
+                body = self._serve_cache(cp, path)
+                fut.set_result(body)
+                return body
             fut.set_exception(exc)
             fut.exception()  # mark retrieved
+            raise
+        except BaseException as exc:  # unexpected: never leave concurrent waiters hanging
+            fut.set_exception(exc)
+            fut.exception()
             raise
         finally:
             self._inflight.pop(key, None)
@@ -119,6 +179,8 @@ class FaceitApiProvider:
         self, path: str, params: dict[str, Any] | None, allow_404: bool
     ) -> dict[str, Any] | None:
         for attempt in range(5):
+            if self._cooldown_until > time.time():
+                raise RateLimited(self._cooldown_until)
             async with self._sem:
                 await self._limiter.wait()
                 try:
@@ -131,21 +193,28 @@ class FaceitApiProvider:
                     await asyncio.sleep(2**attempt)
                     continue
             if resp.status_code == 200:
-                return resp.json()
+                try:
+                    return resp.json()
+                except ValueError as exc:
+                    raise ProviderError("FACEIT API вернул некорректный ответ", status=502) from exc
             if resp.status_code == 404 and allow_404:
                 return None
-            if resp.status_code == 429 or resp.status_code >= 500:
-                retry_after = float(resp.headers.get("Retry-After", 2**attempt))
-                await asyncio.sleep(min(retry_after, 30))
+            if resp.status_code == 429:
+                wait = retry_after_seconds(resp.headers, default=60.0)
+                if wait <= 10 and attempt < 2:
+                    await asyncio.sleep(wait)
+                    continue
+                self._cooldown_until = time.time() + wait
+                raise RateLimited(self._cooldown_until)
+            if resp.status_code >= 500:
+                await asyncio.sleep(min(retry_after_seconds(resp.headers, default=2.0**attempt), 30))
                 continue
             if resp.status_code in (401, 403):
                 raise ProviderError("FACEIT API отклонил ключ (проверьте FACEIT_API_KEY)", status=502)
             if resp.status_code == 404:
                 raise ProviderError("FACEIT API: объект не найден", status=404)
             raise ProviderError(f"FACEIT API вернул ошибку {resp.status_code}", status=502)
-        raise ProviderError(
-            "FACEIT API: превышен лимит запросов или сбой сервера, попробуйте позже", status=503
-        )
+        raise ProviderError("FACEIT API: сбой сервера после нескольких попыток, попробуйте позже", status=503)
 
     async def get_player(self, nickname: str) -> dict[str, Any]:
         data = await self._get(

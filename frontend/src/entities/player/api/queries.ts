@@ -32,6 +32,7 @@ export const useHealth = () =>
   useQuery({
     queryKey: ['health'],
     queryFn: ({ signal }) =>
-      apiGet<{ status: string; provider: string; api_key_configured: boolean; demo_parser: string; auth: { steam: boolean; faceit: boolean } }>('/health', signal),
-    staleTime: 60_000,
+      apiGet<{ status: string; provider: string; api_key_configured: boolean; demo_parser: string; auth: { steam: boolean; faceit: boolean }; rate_limit: { limited: boolean; retry_in_s: number; retry_at: string | null } | null }>('/health', signal),
+    staleTime: 15_000,
+    refetchInterval: 30_000,
   })

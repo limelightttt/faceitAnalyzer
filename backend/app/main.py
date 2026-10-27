@@ -1,5 +1,6 @@
 """FastAPI application: FACEIT analytics, match scouting, accounts, demo pipeline."""
 
+import logging
 from contextlib import asynccontextmanager
 from importlib.metadata import version
 from pathlib import Path
@@ -15,6 +16,8 @@ from .providers.faceit_api import FaceitApiProvider
 from .routes import auth, coach, demos, maps, me, players, scout
 from .state import build_state
 from .tactical.profiles import ingest
+
+log = logging.getLogger("faceit_intelligence")
 
 
 def create_app(settings: Settings | None = None, provider: object | None = None) -> FastAPI:
@@ -59,13 +62,31 @@ def create_app(settings: Settings | None = None, provider: object | None = None)
 
     @app.exception_handler(ProviderError)
     async def provider_error(_, exc: ProviderError):
-        return JSONResponse(status_code=exc.status, content={"detail": str(exc)})
+        headers = {}
+        if getattr(exc, "retry_at", None):
+            import time as _t
+
+            headers["Retry-After"] = str(max(1, int(exc.retry_at - _t.time())))
+        return JSONResponse(status_code=exc.status, content={"detail": str(exc)}, headers=headers)
+
+    @app.exception_handler(Exception)
+    async def unexpected_error(request, exc: Exception):
+        log.exception("Unhandled error on %s", request.url.path)
+        return JSONResponse(
+            status_code=500,
+            content={
+                "detail": f"Внутренняя ошибка сервера ({exc.__class__.__name__}). Подробности в логе backend."
+            },
+        )
 
     @app.get("/api/health")
     async def health():
         return {
             "status": "ok",
             "provider": ctx.provider.name,
+            "rate_limit": ctx.provider.rate_limit_status()
+            if hasattr(ctx.provider, "rate_limit_status")
+            else None,
             "api_key_configured": settings.api_enabled,
             "auth": {"steam": True, "faceit": settings.faceit_oauth_configured},
             "demo_parser": f"demoparser2 {version('demoparser2')}",
