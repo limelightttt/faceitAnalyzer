@@ -1,0 +1,654 @@
+{
+ "items": [
+  {
+   "_derived": true,
+   "match_id": "1-c55150e2-8da7-41fe-a6e0-64e1b1f4915f",
+   "game_id": "cs2",
+   "game_mode": "5v5",
+   "region": "EU",
+   "status": "finished",
+   "teams": {
+    "faction1": {
+     "team_id": "2bae8a16-3e19-4d32-a262-8d04a9a260c8",
+     "nickname": "team_limelightttt",
+     "players": [
+      {
+       "player_id": "2bae8a16-3e19-4d32-a262-8d04a9a260c8",
+       "nickname": "limelightttt"
+      },
+      {
+       "player_id": "406a2050-ef2d-406b-afa5-89f9f434d92c",
+       "nickname": "M1atBoy"
+      },
+      {
+       "player_id": "b2209eec-169a-4e02-9640-f2e30fb5802f",
+       "nickname": "SatanicBear"
+      },
+      {
+       "player_id": "6aa2da9b-9d8b-498a-a8e9-c962819f764b",
+       "nickname": "Xer0o-"
+      },
+      {
+       "player_id": "321caca2-8011-46c6-a34c-f414093bd891",
+       "nickname": "AJMGOD"
+      }
+     ]
+    },
+    "faction2": {
+     "team_id": "be5a3aee-9f62-4aab-89a3-1b7de06a226f",
+     "nickname": "team_miksen",
+     "players": [
+      {
+       "player_id": "05c2bcdd-fb3c-42dc-9311-ff3e8348908e",
+       "nickname": "miksen"
+      },
+      {
+       "player_id": "7b724d19-8df8-4bd7-9cfd-364b40ae59e4",
+       "nickname": "ambinho"
+      },
+      {
+       "player_id": "f7b76553-e1eb-4601-b502-6d1604bbe0e2",
+       "nickname": "MAUS777"
+      },
+      {
+       "player_id": "bc8f29ea-0963-4fee-b1a6-f7048a74cbf6",
+       "nickname": "3xodi4_"
+      },
+      {
+       "player_id": "f9ee372c-6ae7-4e1c-b1b5-a0f3c3e8d272",
+       "nickname": "PeakzY_"
+      }
+     ]
+    }
+   },
+   "results": {
+    "winner": "faction2"
+   }
+  },
+  {
+   "_derived": true,
+   "match_id": "1-21c98866-ef10-418d-b824-b4fbd157e9c6",
+   "game_id": "cs2",
+   "game_mode": "5v5",
+   "region": "EU",
+   "status": "finished",
+   "teams": {
+    "faction1": {
+     "team_id": "62e9aed2-6bf3-4f2a-86a8-1fbd06448125",
+     "nickname": "team_zr999-",
+     "players": [
+      {
+       "player_id": "62e9aed2-6bf3-4f2a-86a8-1fbd06448125",
+       "nickname": "zr999-"
+      },
+      {
+       "player_id": "2422a2a6-f5f6-45e3-aba6-1f2ce6dfe2d6",
+       "nickname": "4Nerhtus-"
+      },
+      {
+       "player_id": "064b7ac0-7318-49a4-84f2-631b839e567c",
+       "nickname": "MAQINEMANN-"
+      },
+      {
+       "player_id": "3b034d76-d90d-4985-a912-693e46c29160",
+       "nickname": "Sudden---"
+      },
+      {
+       "player_id": "c37d86e3-8722-4100-b324-16085eb394e4",
+       "nickname": "p1ayerEZSSM"
+      }
+     ]
+    },
+    "faction2": {
+     "team_id": "2bae8a16-3e19-4d32-a262-8d04a9a260c8",
+     "nickname": "team_limelightttt",
+     "players": [
+      {
+       "player_id": "2df6cba3-d315-4dfd-b2bd-8f1022bd8f7a",
+       "nickname": "Didjey"
+      },
+      {
+       "player_id": "2dedcd72-a9ed-406d-a48b-6e438b88870a",
+       "nickname": "m3y"
+      },
+      {
+       "player_id": "2bae8a16-3e19-4d32-a262-8d04a9a260c8",
+       "nickname": "limelightttt"
+      },
+      {
+       "player_id": "406a2050-ef2d-406b-afa5-89f9f434d92c",
+       "nickname": "M1atBoy"
+      },
+      {
+       "player_id": "b2209eec-169a-4e02-9640-f2e30fb5802f",
+       "nickname": "SatanicBear"
+      }
+     ]
+    }
+   },
+   "results": {
+    "winner": "faction2"
+   }
+  },
+  {
+   "_derived": true,
+   "match_id": "1-1d4d96a4-7780-4162-982c-785be4b2b04b",
+   "game_id": "cs2",
+   "game_mode": "5v5",
+   "region": "EU",
+   "status": "finished",
+   "teams": {
+    "faction1": {
+     "team_id": "2bae8a16-3e19-4d32-a262-8d04a9a260c8",
+     "nickname": "team_limelightttt",
+     "players": [
+      {
+       "player_id": "567ff7fa-17ca-428a-9508-99a993a55561",
+       "nickname": "opat04"
+      },
+      {
+       "player_id": "04a38000-bb95-4450-b98a-4fa8f9e6dff0",
+       "nickname": "L_uR_a"
+      },
+      {
+       "player_id": "2bae8a16-3e19-4d32-a262-8d04a9a260c8",
+       "nickname": "limelightttt"
+      },
+      {
+       "player_id": "406a2050-ef2d-406b-afa5-89f9f434d92c",
+       "nickname": "M1atBoy"
+      },
+      {
+       "player_id": "b2209eec-169a-4e02-9640-f2e30fb5802f",
+       "nickname": "SatanicBear"
+      }
+     ]
+    },
+    "faction2": {
+     "team_id": "8c62fadc-c817-457d-bd00-496b96faae7f",
+     "nickname": "team_s1lvaking",
+     "players": [
+      {
+       "player_id": "8c62fadc-c817-457d-bd00-496b96faae7f",
+       "nickname": "s1lvaking"
+      },
+      {
+       "player_id": "a80bb42c-636a-4f2a-8c01-81986791b59d",
+       "nickname": "-denn1p-"
+      },
+      {
+       "player_id": "84fdb01e-25c8-4244-8da0-e87699b93512",
+       "nickname": "PEREIRA"
+      },
+      {
+       "player_id": "5290cce3-c8a5-4e31-8e30-a9a70b88e8aa",
+       "nickname": "ONNI-CHAN"
+      },
+      {
+       "player_id": "c8b60ab1-aacb-44f1-823b-0cd8d501dbd6",
+       "nickname": "ksek"
+      }
+     ]
+    }
+   },
+   "results": {
+    "winner": "faction1"
+   }
+  },
+  {
+   "_derived": true,
+   "match_id": "1-07d05137-df23-4966-88e6-b8d651261ae7",
+   "game_id": "cs2",
+   "game_mode": "5v5",
+   "region": "EU",
+   "status": "finished",
+   "teams": {
+    "faction1": {
+     "team_id": "d4315e65-0c5e-4b2f-9ccb-d30f9dfb984e",
+     "nickname": "team_stox",
+     "players": [
+      {
+       "player_id": "7496f608-0926-4452-819b-101b5f48ea0a",
+       "nickname": "D4NIEC"
+      },
+      {
+       "player_id": "783a292b-b1c7-4e15-bf50-6101647ab008",
+       "nickname": "papa_figos2k"
+      },
+      {
+       "player_id": "d4315e65-0c5e-4b2f-9ccb-d30f9dfb984e",
+       "nickname": "stox"
+      },
+      {
+       "player_id": "cb469510-e3a3-4aba-b45a-5bbb9a4eb0d6",
+       "nickname": "math1as--"
+      },
+      {
+       "player_id": "e68147af-7cc8-414d-b1f9-015248a6e03b",
+       "nickname": "Bou"
+      }
+     ]
+    },
+    "faction2": {
+     "team_id": "2bae8a16-3e19-4d32-a262-8d04a9a260c8",
+     "nickname": "team_limelightttt",
+     "players": [
+      {
+       "player_id": "e2866d29-20cd-4f43-9bf4-e6f41b9d8b64",
+       "nickname": "somexied"
+      },
+      {
+       "player_id": "567ff7fa-17ca-428a-9508-99a993a55561",
+       "nickname": "opat04"
+      },
+      {
+       "player_id": "2bae8a16-3e19-4d32-a262-8d04a9a260c8",
+       "nickname": "limelightttt"
+      },
+      {
+       "player_id": "b2209eec-169a-4e02-9640-f2e30fb5802f",
+       "nickname": "SatanicBear"
+      },
+      {
+       "player_id": "406a2050-ef2d-406b-afa5-89f9f434d92c",
+       "nickname": "M1atBoy"
+      }
+     ]
+    }
+   },
+   "results": {
+    "winner": "faction2"
+   }
+  },
+  {
+   "_derived": true,
+   "match_id": "1-4e355d3e-e839-4623-a3fb-9c5b183d9de4",
+   "game_id": "cs2",
+   "game_mode": "5v5",
+   "region": "EU",
+   "status": "finished",
+   "teams": {
+    "faction1": {
+     "team_id": "61ec5ed8-d96d-4553-8d92-48beb61ae967",
+     "nickname": "team_kurp",
+     "players": [
+      {
+       "player_id": "61ec5ed8-d96d-4553-8d92-48beb61ae967",
+       "nickname": "kurp"
+      },
+      {
+       "player_id": "fc28c888-c719-4660-a6c5-89a9ba14a2b6",
+       "nickname": "x1trap"
+      },
+      {
+       "player_id": "11ec1f06-be94-425d-83af-e5f5ca2cda4e",
+       "nickname": "miksozzz"
+      },
+      {
+       "player_id": "5ac20c08-c755-4eb0-89e3-6cd26eed1548",
+       "nickname": "__CLUTCHER"
+      },
+      {
+       "player_id": "73ad31c8-b838-42ae-9bda-f8a36edd6186",
+       "nickname": "SamiK-iwnl"
+      }
+     ]
+    },
+    "faction2": {
+     "team_id": "2bae8a16-3e19-4d32-a262-8d04a9a260c8",
+     "nickname": "team_limelightttt",
+     "players": [
+      {
+       "player_id": "7496f608-0926-4452-819b-101b5f48ea0a",
+       "nickname": "D4NIEC"
+      },
+      {
+       "player_id": "7842f2cf-f540-472d-b82d-cd2fd599fbcc",
+       "nickname": "f0rgiveNNNN"
+      },
+      {
+       "player_id": "2bae8a16-3e19-4d32-a262-8d04a9a260c8",
+       "nickname": "limelightttt"
+      },
+      {
+       "player_id": "b2209eec-169a-4e02-9640-f2e30fb5802f",
+       "nickname": "SatanicBear"
+      },
+      {
+       "player_id": "406a2050-ef2d-406b-afa5-89f9f434d92c",
+       "nickname": "M1atBoy"
+      }
+     ]
+    }
+   },
+   "results": {
+    "winner": "faction1"
+   }
+  },
+  {
+   "_derived": true,
+   "match_id": "1-1b08dea4-a00f-47cd-9307-5596238c1076",
+   "game_id": "cs2",
+   "game_mode": "5v5",
+   "region": "EU",
+   "status": "finished",
+   "teams": {
+    "faction1": {
+     "team_id": "2bae8a16-3e19-4d32-a262-8d04a9a260c8",
+     "nickname": "team_limelightttt",
+     "players": [
+      {
+       "player_id": "d4853e78-88b3-468c-98d3-ad09579ec690",
+       "nickname": "AzOlasz"
+      },
+      {
+       "player_id": "2bae8a16-3e19-4d32-a262-8d04a9a260c8",
+       "nickname": "limelightttt"
+      },
+      {
+       "player_id": "406a2050-ef2d-406b-afa5-89f9f434d92c",
+       "nickname": "M1atBoy"
+      },
+      {
+       "player_id": "ab618a02-86bb-4278-82c3-5d8ebeb02007",
+       "nickname": "KapKarin"
+      },
+      {
+       "player_id": "077b3fd6-b589-44ee-91f6-4a9a27243bb9",
+       "nickname": "GoofyCsgo_"
+      }
+     ]
+    },
+    "faction2": {
+     "team_id": "4e54c9f0-73e4-447f-8680-a9d41f652a5f",
+     "nickname": "team_RobiNn-",
+     "players": [
+      {
+       "player_id": "efec8dd9-6bce-4241-b43b-2edf37f7b038",
+       "nickname": "Sybble"
+      },
+      {
+       "player_id": "705aec46-565d-4a85-af76-9031303469de",
+       "nickname": "bekmakhmudov"
+      },
+      {
+       "player_id": "4e54c9f0-73e4-447f-8680-a9d41f652a5f",
+       "nickname": "RobiNn-"
+      },
+      {
+       "player_id": "c5a24821-4e76-416f-9567-b40274c6b4fc",
+       "nickname": "Vaipn"
+      },
+      {
+       "player_id": "71a34b75-5811-47d7-abd0-3dfb2d8584bb",
+       "nickname": "v2k--"
+      }
+     ]
+    }
+   },
+   "results": {
+    "winner": "faction1"
+   }
+  },
+  {
+   "_derived": true,
+   "match_id": "1-def9773b-62eb-433f-987f-dccc9aeb50e8",
+   "game_id": "cs2",
+   "game_mode": "5v5",
+   "region": "EU",
+   "status": "finished",
+   "teams": {
+    "faction1": {
+     "team_id": "2bae8a16-3e19-4d32-a262-8d04a9a260c8",
+     "nickname": "team_limelightttt",
+     "players": [
+      {
+       "player_id": "8d18bf8b-6183-4682-ac25-26d89250d37d",
+       "nickname": "allthenights"
+      },
+      {
+       "player_id": "2bae8a16-3e19-4d32-a262-8d04a9a260c8",
+       "nickname": "limelightttt"
+      },
+      {
+       "player_id": "406a2050-ef2d-406b-afa5-89f9f434d92c",
+       "nickname": "M1atBoy"
+      },
+      {
+       "player_id": "3389dc0f-7e52-4da6-a269-65ab481bf387",
+       "nickname": "LVK"
+      },
+      {
+       "player_id": "af78cec1-7504-4a62-8675-ba360cdfb411",
+       "nickname": "Geezz"
+      }
+     ]
+    },
+    "faction2": {
+     "team_id": "e42c44d6-79d4-40ca-8878-1306a3f97c38",
+     "nickname": "team_mTn",
+     "players": [
+      {
+       "player_id": "84bc5a6f-ebe0-496a-8e9c-d53f83c39d6e",
+       "nickname": "n1k0n0ff"
+      },
+      {
+       "player_id": "ff15bb6d-c968-4abe-9ab3-9be83590e501",
+       "nickname": "r11mas"
+      },
+      {
+       "player_id": "e42c44d6-79d4-40ca-8878-1306a3f97c38",
+       "nickname": "mTn"
+      },
+      {
+       "player_id": "3d9f178a-b5c5-484d-a38e-64e48a749bf9",
+       "nickname": "Kica_"
+      },
+      {
+       "player_id": "f449c9c8-588e-4ef1-a9ff-b60d1fd196c6",
+       "nickname": "Jany"
+      }
+     ]
+    }
+   },
+   "results": {
+    "winner": "faction2"
+   }
+  },
+  {
+   "_derived": true,
+   "match_id": "1-b0fa0bc1-13d1-4e30-9e3c-4087301edbfc",
+   "game_id": "cs2",
+   "game_mode": "5v5",
+   "region": "EU",
+   "status": "finished",
+   "teams": {
+    "faction1": {
+     "team_id": "8c876eb2-68e8-4554-b92a-4eac11cadf43",
+     "nickname": "team_CDJ",
+     "players": [
+      {
+       "player_id": "2bae8a16-3e19-4d32-a262-8d04a9a260c8",
+       "nickname": "limelightttt"
+      },
+      {
+       "player_id": "406a2050-ef2d-406b-afa5-89f9f434d92c",
+       "nickname": "M1atBoy"
+      },
+      {
+       "player_id": "8c876eb2-68e8-4554-b92a-4eac11cadf43",
+       "nickname": "CDJ"
+      },
+      {
+       "player_id": "07aa067b-f07c-4961-8714-bdb0b7892053",
+       "nickname": "-TheReaper"
+      },
+      {
+       "player_id": "1904b975-4dbf-4d7a-a422-059b6f47466a",
+       "nickname": "P4rma"
+      }
+     ]
+    },
+    "faction2": {
+     "team_id": "dd861e02-0702-444f-af35-df26535cffc1",
+     "nickname": "team_0zY",
+     "players": [
+      {
+       "player_id": "da1cc628-5391-400d-a8b2-10f6e11e87c1",
+       "nickname": "0zY"
+      },
+      {
+       "player_id": "98e0bb63-8987-4d31-bd3b-0c701fa3dd86",
+       "nickname": "jmarsh"
+      },
+      {
+       "player_id": "21551dfb-924e-4b7c-b06e-be43596b0bea",
+       "nickname": "wacked-"
+      },
+      {
+       "player_id": "972e051d-90f6-4857-8a99-8d1ba10bcbd4",
+       "nickname": "-aaronn"
+      },
+      {
+       "player_id": "b22a6e5d-e5c8-4adb-8a11-0796241f5e72",
+       "nickname": "1NR"
+      }
+     ]
+    }
+   },
+   "results": {
+    "winner": "faction1"
+   }
+  },
+  {
+   "_derived": true,
+   "match_id": "1-94f6df97-4db6-482f-9a61-b99552fb0ae7",
+   "game_id": "cs2",
+   "game_mode": "5v5",
+   "region": "EU",
+   "status": "finished",
+   "teams": {
+    "faction1": {
+     "team_id": "d916d398-fb40-4234-a5ce-8fa98524421d",
+     "nickname": "team_AvagonR",
+     "players": [
+      {
+       "player_id": "2bae8a16-3e19-4d32-a262-8d04a9a260c8",
+       "nickname": "limelightttt"
+      },
+      {
+       "player_id": "d916d398-fb40-4234-a5ce-8fa98524421d",
+       "nickname": "AvagonR"
+      },
+      {
+       "player_id": "aba6bbae-80e7-4b23-94ed-d6b95b639619",
+       "nickname": "_Tsybuleve_"
+      },
+      {
+       "player_id": "82264802-fa52-47a2-87d4-cb0b0092ea5d",
+       "nickname": "majjjkello"
+      },
+      {
+       "player_id": "b91696d8-60f6-40c8-a3ae-3ae7cc04e9e1",
+       "nickname": "_1sevas1_"
+      }
+     ]
+    },
+    "faction2": {
+     "team_id": "bccbf514-a41a-409a-8bd0-47a6b7a3aa51",
+     "nickname": "team_JustRudi",
+     "players": [
+      {
+       "player_id": "bccbf514-a41a-409a-8bd0-47a6b7a3aa51",
+       "nickname": "JustRudi"
+      },
+      {
+       "player_id": "859ed47a-75a0-4863-89d6-02146adadb2a",
+       "nickname": "Delboy1998"
+      },
+      {
+       "player_id": "a04b4906-00a3-479e-a4b3-db7ce4a81638",
+       "nickname": "ChuckBassXO"
+      },
+      {
+       "player_id": "6f287e7c-e71b-411c-9721-48690edd3c69",
+       "nickname": "m1lica"
+      },
+      {
+       "player_id": "c5df0ee6-9d16-4dc1-8dce-c0890747d2c6",
+       "nickname": "SonyEron"
+      }
+     ]
+    }
+   },
+   "results": {
+    "winner": "faction1"
+   }
+  },
+  {
+   "_derived": true,
+   "match_id": "1-745f08e5-a63e-4d20-ab60-e80956e44b2f",
+   "game_id": "cs2",
+   "game_mode": "5v5",
+   "region": "EU",
+   "status": "finished",
+   "teams": {
+    "faction1": {
+     "team_id": "63a30b8a-8bdc-471a-9448-5d890db11cfd",
+     "nickname": "team_myth-",
+     "players": [
+      {
+       "player_id": "f9ed47ae-6fb9-489b-a73d-f3632f732cd7",
+       "nickname": "aqua4"
+      },
+      {
+       "player_id": "8ad241c1-6592-4af8-a564-df7f06d1ff4d",
+       "nickname": "Hizzard-"
+      },
+      {
+       "player_id": "113262b5-41ab-4786-9998-4eaf644dd5f9",
+       "nickname": "tomek_killer"
+      },
+      {
+       "player_id": "63a30b8a-8bdc-471a-9448-5d890db11cfd",
+       "nickname": "myth-"
+      },
+      {
+       "player_id": "ad91ffb8-8514-49f1-84b7-e5ecdffcb15a",
+       "nickname": "-L-O-V-E-"
+      }
+     ]
+    },
+    "faction2": {
+     "team_id": "406a2050-ef2d-406b-afa5-89f9f434d92c",
+     "nickname": "team_M1atBoy",
+     "players": [
+      {
+       "player_id": "406a2050-ef2d-406b-afa5-89f9f434d92c",
+       "nickname": "M1atBoy"
+      },
+      {
+       "player_id": "2bae8a16-3e19-4d32-a262-8d04a9a260c8",
+       "nickname": "limelightttt"
+      },
+      {
+       "player_id": "5b3559d0-d853-4959-82d7-b7233cad710a",
+       "nickname": "Sorry_Hunter"
+      },
+      {
+       "player_id": "7ef0adef-e633-47b7-b9ef-81edf5ce5244",
+       "nickname": "-zyb9"
+      },
+      {
+       "player_id": "39d15f54-3f2a-4095-9cf3-865da17b9310",
+       "nickname": "Shanya17"
+      }
+     ]
+    }
+   },
+   "results": {
+    "winner": "faction1"
+   }
+  }
+ ]
+}
