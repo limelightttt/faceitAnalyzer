@@ -92,3 +92,187 @@
     font-variant-numeric: tabular-nums;
   }
 }
+
+/* ── Motion system ────────────────────────────────────────────────────────────────────────────────
+   One language for the whole app: things arrive with a short decelerating rise, leave faster than they
+   arrive, popovers grow from their trigger, confirmations get a small overshoot. Only transform/opacity
+   are animated (GPU-friendly). Durations are short: motion explains a change, it never makes anyone wait. */
+:root {
+  --ease-arrive: cubic-bezier(0.22, 1, 0.36, 1); /* arrivals */
+  --ease-leave: cubic-bezier(0.55, 0, 1, 0.45); /* departures */
+  --ease-morph: cubic-bezier(0.65, 0, 0.35, 1); /* morphs, progress */
+  --ease-confirm: cubic-bezier(0.34, 1.56, 0.64, 1); /* confirmations */
+  --dur-instant: 90ms; /* press feedback */
+  --dur-fast: 150ms; /* hover, popovers, exits */
+  --dur-base: 240ms; /* enters, state swaps */
+  --dur-slow: 420ms; /* morphs, check draw */
+  --rise: 6px; /* enter distance */
+  --stagger: 45ms;
+}
+
+@keyframes fi-enter {
+  from {
+    opacity: 0;
+    transform: translateY(var(--rise));
+  }
+}
+@keyframes fi-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes fi-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes fi-pop-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+}
+@keyframes fi-pop-out {
+  to {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+}
+@keyframes fi-shimmer {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(100%);
+  }
+}
+@keyframes fi-indeterminate {
+  from {
+    transform: translateX(-100%) scaleX(0.4);
+  }
+  to {
+    transform: translateX(250%) scaleX(0.4);
+  }
+}
+@keyframes fi-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes fi-burst {
+  from {
+    opacity: 0.55;
+    transform: scale(0.6);
+  }
+  to {
+    opacity: 0;
+    transform: scale(1.6);
+  }
+}
+@keyframes fi-shake {
+  20%,
+  60% {
+    transform: translateX(-4px);
+  }
+  40%,
+  80% {
+    transform: translateX(4px);
+  }
+}
+@keyframes fi-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Mount transition for routes, swapped states and loaded content. --i staggers siblings (capped). */
+@utility animate-enter {
+  animation: fi-enter var(--dur-base) var(--ease-arrive) both;
+  animation-delay: calc(min(var(--i, 0), 6) * var(--stagger));
+}
+@utility animate-fade-in {
+  animation: fi-fade-in var(--dur-base) var(--ease-arrive) both;
+}
+@utility animate-pop-in {
+  animation: fi-pop-in var(--dur-fast) var(--ease-arrive) both;
+}
+@utility animate-shake {
+  animation: fi-shake 360ms var(--ease-morph) both;
+}
+/* Radix popovers (select, tooltip): grow from the trigger, leave faster. */
+@utility popover-motion {
+  transform-origin: var(--radix-select-content-transform-origin, var(--radix-tooltip-content-transform-origin, center));
+  &[data-state='open'],
+  &[data-state='delayed-open'],
+  &[data-state='instant-open'] {
+    animation: fi-pop-in var(--dur-fast) var(--ease-arrive);
+  }
+  &[data-state='closed'] {
+    animation: fi-pop-out 110ms var(--ease-leave) forwards;
+  }
+}
+/* Press feedback for anything clickable that is not a Button. */
+@utility pressable {
+  transition:
+    transform var(--dur-instant) var(--ease-arrive),
+    background-color var(--dur-fast) var(--ease-arrive),
+    border-color var(--dur-fast) var(--ease-arrive),
+    color var(--dur-fast) var(--ease-arrive);
+  &:active:not(:disabled) {
+    transform: scale(0.97);
+  }
+}
+
+/* Native <details>: smooth height where the browser supports it (progressive enhancement). */
+@supports (interpolate-size: allow-keywords) {
+  :root {
+    interpolate-size: allow-keywords;
+  }
+  details::details-content {
+    block-size: 0;
+    overflow: clip;
+    transition:
+      block-size var(--dur-base) var(--ease-morph),
+      content-visibility var(--dur-base) allow-discrete;
+  }
+  details[open]::details-content {
+    block-size: auto;
+  }
+}
+
+/* Reduced motion: no movement, no shimmer, no overshoot. State changes stay instant and readable.
+   Activity indicators (.motion-essential) keep a slow spin: they carry meaning ("still working"). */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --rise: 0px;
+    --stagger: 0ms;
+  }
+  *,
+  ::before,
+  ::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+    scroll-behavior: auto !important;
+  }
+  .motion-essential {
+    animation-duration: 1.6s !important;
+    animation-iteration-count: infinite !important;
+  }
+}
+
+/* Skeletons: the shape of the coming content with a soft sweep (transform-only). */
+@utility skeleton {
+  position: relative;
+  overflow: hidden;
+  border-radius: 0.375rem;
+  background: var(--card-2);
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background: linear-gradient(90deg, transparent, color-mix(in oklab, var(--foreground) 5%, transparent), transparent);
+    animation: fi-shimmer 1.5s var(--ease-morph) infinite;
+  }
+}
