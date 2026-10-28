@@ -40,7 +40,7 @@ const ok = (c, m) => {
   ok(await page.getByText('FACEIT API').first().isVisible(), 'player page uses FACEIT API source')
 
   await page.goto(BASE + '/scout')
-  await page.getByLabel('Ссылка на комнату матча FACEIT').fill(`https://www.faceit.com/ru/cs2/room/${up.match_id}`)
+  await page.getByLabel('Ссылка на комнату или ник FACEIT').fill(`https://www.faceit.com/ru/cs2/room/${up.match_id}`)
   await page.getByRole('button', { name: 'Разведка' }).click()
   await page.waitForURL(/\/scout\/[0-9a-f]{12}/)
   await page.getByText('Предматчевый брифинг').waitFor({ timeout: 90000 })

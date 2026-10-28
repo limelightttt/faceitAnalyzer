@@ -55,6 +55,8 @@ class Settings(BaseSettings):
     require_login: bool = True
     # Real Elo snapshots of linked users every N minutes (0 disables). One cached profile request per user.
     tracking_interval_minutes: int = 180
+    # Pending predictions are compared with finished matches every N minutes (0 disables).
+    prediction_check_minutes: int = 20
     # Optional comma-separated allowlist: SteamID64, FACEIT player id or FACEIT nickname. Empty = anyone may sign in.
     beta_allowlist: str = ""
 

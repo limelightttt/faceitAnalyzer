@@ -50,7 +50,7 @@ const startMock = () => start('mock', ['python', '-m', 'tests.support.mock_facei
 const startApp = () =>
   start('app', ['uvicorn', 'app.main:app', '--host', '127.0.0.1', '--port', '8010'], {
     FACEIT_API_BASE: `${MOCK}/data/v4`, FACEIT_API_KEY: 'test-key', FACEIT_REQUESTS_PER_SECOND: '50',
-    AUTH_DEV_LOGIN: 'true', DATA_DIR: DATA, APP_BASE_URL: BASE, REQUIRE_LOGIN: 'true', TRACKING_INTERVAL_MINUTES: '0',
+    AUTH_DEV_LOGIN: 'true', DATA_DIR: DATA, APP_BASE_URL: BASE, REQUIRE_LOGIN: 'true', TRACKING_INTERVAL_MINUTES: '0', PREDICTION_CHECK_MINUTES: '0',
     CORS_ORIGINS: JSON.stringify([BASE]),
   })
 
@@ -82,11 +82,11 @@ const startApp = () =>
   })
   await page.goto(BASE + '/')
   await page.getByText('Ваш профиль').waitFor({ timeout: 60000 })
-  ok(await page.getByRole('link', { name: 'scout_me' }).first().isVisible(), 'dashboard shows the own FACEIT profile without searching')
+  ok((await page.getByRole('link', { name: 'Мой профиль' }).getAttribute('href')) === '/players/scout_me', 'dashboard shows the own FACEIT profile without searching')
 
   // 5-7. search another player, profile, match history
-  await page.getByLabel('Никнейм FACEIT').first().fill('duo_a')
-  await page.getByRole('button', { name: 'Анализ' }).first().click().catch(() => {})
+  await page.getByLabel('Ссылка на комнату или ник FACEIT').first().fill('duo_a')
+  await page.getByRole('button', { name: 'Открыть игрока' }).first().click().catch(() => {})
   await page.goto(BASE + '/players/duo_a')
   await page.getByText('Win rate').first().waitFor({ timeout: 60000 })
   await page.getByRole('link', { name: 'Матчи', exact: true }).click()
@@ -95,7 +95,7 @@ const startApp = () =>
 
   // 8-10. Match Scout from a matchroom URL + saved prediction
   await page.goto(BASE + '/scout')
-  await page.getByLabel('Ссылка на комнату матча FACEIT').fill(`https://www.faceit.com/en/cs2/room/${up.match_id}`)
+  await page.getByLabel('Ссылка на комнату или ник FACEIT').fill(`https://www.faceit.com/en/cs2/room/${up.match_id}`)
   await page.getByRole('button', { name: 'Разведка' }).click()
   await page.waitForURL(/\/scout\/[0-9a-f]{12}$/, { timeout: 30000 })
   await page.locator('text=угроза').nth(9).waitFor({ timeout: 120000 })

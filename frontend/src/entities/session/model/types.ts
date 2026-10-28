@@ -27,4 +27,6 @@ export interface UserSettings {
   show_risk_signals: boolean
   timezone: string
   watchlist: string[]
+  /** nicknames you usually queue with: the default group for the stack map pool */
+  teammates: string[]
 }

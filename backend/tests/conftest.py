@@ -29,6 +29,8 @@ def make_settings(tmp: Path, **kw) -> Settings:
         app_base_url="http://localhost:8000",
         faceit_provider="fixtures",
         require_login=False,
+        tracking_interval_minutes=0,  # background jobs are tested directly, never on a timer
+        prediction_check_minutes=0,
         sample_demos_dir=get_settings().sample_demos_dir,
         fixtures_dir=get_settings().fixtures_dir,
     )

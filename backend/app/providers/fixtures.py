@@ -100,7 +100,7 @@ class FixtureProvider:
                 return ds
         return None
 
-    async def get_match(self, match_id: str) -> dict[str, Any] | None:
+    async def get_match(self, match_id: str, fresh: bool = False) -> dict[str, Any] | None:
         ds = self._match_dir(match_id)
         return self._read(ds / "matches" / f"{match_id}.json") if ds else None
 

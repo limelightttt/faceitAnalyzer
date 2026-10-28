@@ -38,10 +38,31 @@ PRE_MATCH = {"READY", "VOTING", "CONFIGURING", "SCHEDULED", "CHECK_IN", "SUBSTIT
 FINISHED = {"FINISHED"}
 DEAD = {"CANCELLED", "ABORTED"}
 
+
+def match_phase(status: str) -> str:
+    """FACEIT match status -> "pre" | "live" | "post" | "dead" | "unknown"."""
+    if status in PRE_MATCH:
+        return "pre"
+    if status == "ONGOING":
+        return "live"
+    if status in FINISHED:
+        return "post"
+    return "dead" if status in DEAD else "unknown"
+
+
+def map_pick(details: dict[str, Any]) -> str | None:
+    """The map chosen in the match room, or None while the veto is still running."""
+    picks = ((details.get("voting") or {}).get("map") or {}).get("pick") or []
+    return norm_map(picks[0]) if picks else None
+
+
 _tasks: set[asyncio.Task] = set()
 
 
-async def _player_bundle(provider, roster: dict[str, Any], faction: str) -> PlayerFeatures:
+async def player_bundle(
+    provider, roster: dict[str, Any], faction: str, recent_n: int = RECENT_N, history_n: int = HISTORY_N
+) -> PlayerFeatures:
+    """Everything the scout needs about one player; per-endpoint failures become `errors`, not exceptions."""
     pid = roster["player_id"]
     errors = []
 
@@ -57,8 +78,8 @@ async def _player_bundle(provider, roster: dict[str, Any], faction: str) -> Play
     profile, lifetime, recent, history = await asyncio.gather(
         safe(provider.get_player_by_id(pid), "профиль", None),
         safe(provider.get_lifetime_stats(pid), "статистика", None),
-        safe(provider.get_recent_match_stats(pid, RECENT_N), "матчи", []),
-        safe(provider.get_history(pid, HISTORY_N), "история", []),
+        safe(provider.get_recent_match_stats(pid, recent_n), "матчи", []),
+        safe(provider.get_history(pid, history_n), "история", []),
     )
     f = build_features(faction, roster, profile, lifetime, recent, history)
     f.errors = errors
@@ -119,20 +140,24 @@ def _site_duels(team: list[PlayerFeatures], tac: dict[str, Any], mp: str) -> lis
 
 
 async def build_report(
-    provider, db: Database, match_id: str, user_player_id: str | None, progress=None
+    provider,
+    db: Database,
+    match_id: str,
+    user_player_id: str | None,
+    progress=None,
+    fresh: bool = False,
 ) -> dict[str, Any]:
     log: list[FetchRecord] = []
     token = fetch_log.set(log)
     try:
-        details = await provider.get_match(match_id)
+        details = await provider.get_match(match_id, fresh=fresh)
         if not details:
             raise ProviderError("Матч не найден на FACEIT (проверьте ссылку)", status=404)
         status = str(details.get("status", "")).upper()
         factions = details.get("teams") or {}
         if not {"faction1", "faction2"} <= set(factions):
             raise ProviderError("У матча ещё нет составов команд", status=409)
-        picks = ((details.get("voting") or {}).get("map") or {}).get("pick") or []
-        mp = norm_map(picks[0]) if picks else None
+        mp = map_pick(details)
         rosters = []
         seen: set[str] = set()
         for fk in ("faction1", "faction2"):
@@ -147,7 +172,7 @@ async def build_report(
 
         async def one(fk, r):
             nonlocal done
-            f = await _player_bundle(provider, r, fk)
+            f = await player_bundle(provider, r, fk)
             done += 1
             if progress:
                 progress(PLAYERS_START + (BRIEFING_START - PLAYERS_START) * done / max(1, len(rosters)))
@@ -242,15 +267,7 @@ async def build_report(
     return {
         "match_id": match_id,
         "status": status,
-        "phase": "pre"
-        if status in PRE_MATCH
-        else "live"
-        if status == "ONGOING"
-        else "post"
-        if status in FINISHED
-        else "dead"
-        if status in DEAD
-        else "unknown",
+        "phase": match_phase(status),
         "map": mp,
         "map_pool": pool,
         "competition": details.get("competition_name"),
@@ -318,7 +335,10 @@ def input_hash(report: dict[str, Any]) -> str:
     ).hexdigest()
 
 
-def start_job(state, match_id: str, user_id: int | None, user_player_id: str | None) -> str:
+def start_job(
+    state, match_id: str, user_id: int | None, user_player_id: str | None, fresh: bool = False
+) -> str:
+    """`fresh`: a requested refresh re-reads the room (map pick, rosters) instead of the short live cache."""
     sid = secrets.token_hex(6)
     with state.db.session() as s:
         s.add(ScoutReport(id=sid, match_id=match_id, user_id=user_id, status="running", progress=0.02))
@@ -331,7 +351,9 @@ def start_job(state, match_id: str, user_id: int | None, user_player_id: str | N
 
     async def run():
         try:
-            report = await build_report(state.provider, state.db, match_id, user_player_id, set_progress)
+            report = await build_report(
+                state.provider, state.db, match_id, user_player_id, set_progress, fresh=fresh
+            )
             with state.db.session() as s:
                 row = s.get(ScoutReport, sid)
                 row.status, row.progress, row.report = "done", 1.0, report

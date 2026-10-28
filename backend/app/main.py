@@ -20,7 +20,7 @@ from .config import Settings, get_settings
 from .db import ScoutReport, TacticalSample
 from .providers.base import ProviderError
 from .providers.faceit_api import FaceitApiProvider
-from .routes import auth, coach, demos, maps, me, players, scout
+from .routes import auth, coach, demos, maps, me, players, scout, stack
 from .state import build_state
 from .tactical.profiles import fingerprint, ingest
 
@@ -74,14 +74,25 @@ def create_app(settings: Settings | None = None, provider: object | None = None)
         fail_interrupted_scouts()
         ctx.demos.seed_sample(settings.sample_demos_dir)
         rebuild_tactical_once()
-        tracker = None
-        if settings.tracking_interval_minutes > 0 and isinstance(ctx.provider, FaceitApiProvider):
-            tracker = asyncio.get_running_loop().create_task(
-                tracking.loop(ctx.provider, ctx.db, settings.tracking_interval_minutes * 60)
-            )
+        jobs = []
+        if isinstance(ctx.provider, FaceitApiProvider):
+            p, db = ctx.provider, ctx.db
+            schedule = [
+                ("elo tracking", settings.tracking_interval_minutes, lambda: tracking.run_once(p, db)),
+                (
+                    "prediction check",
+                    settings.prediction_check_minutes,
+                    lambda: tracking.check_predictions(p, db),
+                ),
+            ]
+            jobs = [
+                asyncio.get_running_loop().create_task(tracking.every(name, minutes * 60, job))
+                for name, minutes, job in schedule
+                if minutes > 0
+            ]
         yield
-        if tracker:
-            tracker.cancel()
+        for job in jobs:
+            job.cancel()
         ctx.demos.shutdown()
         if isinstance(ctx.provider, FaceitApiProvider):
             await ctx.provider.aclose()
@@ -156,7 +167,16 @@ def create_app(settings: Settings | None = None, provider: object | None = None)
             "demo_parser": f"demoparser2 {version('demoparser2')}",
         }
 
-    for r in (auth.router, me.router, players.router, demos.router, scout.router, coach.router, maps.router):
+    for r in (
+        auth.router,
+        me.router,
+        players.router,
+        demos.router,
+        scout.router,
+        stack.router,
+        coach.router,
+        maps.router,
+    ):
         app.include_router(r)
 
     dist = Path(__file__).resolve().parents[2] / "frontend" / "dist"

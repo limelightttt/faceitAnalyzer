@@ -1,12 +1,12 @@
-import { Check, X } from 'lucide-react'
+import { Check } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
 import { type UserSettings, useSaveSettings, useSession, useSettings, useUnlinkIdentity } from '@/entities/session'
 import { LoginButtons, LogoutButton } from '@/features/auth'
 import { cn } from '@/shared/lib/cn'
-import { useSingleFlight } from '@/shared/lib/use-single-flight'
 import { dateTime, mapName } from '@/shared/lib/format'
-import { AsyncView, Badge, Button, Card, CardContent, CardDescription, CardHeader, CardTitle, ConfirmButton, EmptyState, InlineError, Input, LoadingSkeleton, Select, Skeleton } from '@/shared/ui'
+import { useSingleFlight } from '@/shared/lib/use-single-flight'
+import { AsyncView, Badge, Button, Card, CardContent, CardDescription, CardHeader, CardTitle, ConfirmButton, EmptyState, InlineError, LoadingSkeleton, Select, Skeleton, TagInput } from '@/shared/ui'
 
 const MAPS = ['de_mirage', 'de_inferno', 'de_dust2', 'de_nuke', 'de_ancient', 'de_anubis', 'de_train']
 const SOURCE: Record<string, string> = {
@@ -109,7 +109,6 @@ function Preferences({ initial }: { initial: UserSettings }) {
   const save = useSaveSettings()
   const once = useSingleFlight()
   const [form, setForm] = useState<UserSettings>(initial)
-  const [watch, setWatch] = useState('')
   // a newer server copy (another tab, or our own save) replaces the form only when it has no local edits
   const [base, setBase] = useState(initial)
   useEffect(() => {
@@ -119,11 +118,6 @@ function Preferences({ initial }: { initial: UserSettings }) {
     }
   }, [initial, base])
   const dirty = !same(form, base)
-  const addWatch = () => {
-    const v = watch.trim()
-    if (v) setForm({ ...form, watchlist: [...new Set([...form.watchlist, v])] })
-    setWatch('')
-  }
   return (
     <Card>
       <CardHeader>
@@ -160,31 +154,13 @@ function Preferences({ initial }: { initial: UserSettings }) {
           <input type="checkbox" checked={form.show_risk_signals} onChange={(e) => setForm({ ...form, show_risk_signals: e.target.checked })} className="size-4 accent-[var(--primary)]" />
         </label>
         <div className="flex flex-wrap items-center gap-2">
+          <span className="w-56 text-muted-foreground">Мой стак</span>
+          <TagInput label="Добавить тиммейта" values={form.teammates} onChange={(teammates) => setForm({ ...form, teammates })} max={4} />
+          <span className="w-full text-xs text-subtle-foreground sm:pl-58">С кем вы обычно играете: по умолчанию они попадут в «Стак» и в пул карт разведки.</span>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
           <span className="w-56 text-muted-foreground">Список наблюдения</span>
-          {form.watchlist.map((w) => (
-            <Badge key={w} className="animate-pop-in">
-              {w}
-              <button type="button" aria-label={`Убрать ${w}`} onClick={() => setForm({ ...form, watchlist: form.watchlist.filter((x) => x !== w) })} className="rounded hover:text-foreground">
-                <X />
-              </button>
-            </Badge>
-          ))}
-          <Input
-            value={watch}
-            onChange={(e) => setWatch(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                e.preventDefault()
-                addWatch()
-              }
-            }}
-            placeholder="ник"
-            className="h-8 w-40"
-            aria-label="Добавить ник"
-          />
-          <Button size="sm" variant="secondary" onClick={addWatch} disabled={!watch.trim()}>
-            Добавить
-          </Button>
+          <TagInput label="Добавить ник" values={form.watchlist} onChange={(watchlist) => setForm({ ...form, watchlist })} max={30} />
         </div>
         <div className="flex flex-wrap items-center gap-3 border-t pt-4">
           <Button onClick={() => once(() => save.mutateAsync(form).then(setBase))} loading={save.isPending} disabled={!dirty}>

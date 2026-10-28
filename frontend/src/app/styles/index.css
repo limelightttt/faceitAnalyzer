@@ -276,3 +276,13 @@
     animation: fi-shimmer 1.5s var(--ease-morph) infinite;
   }
 }
+
+/* Modal backdrop: fades with the dialog (Radix waits for the closing animation before unmounting). */
+@utility overlay-motion {
+  &[data-state='open'] {
+    animation: fi-fade-in var(--dur-fast) var(--ease-arrive);
+  }
+  &[data-state='closed'] {
+    animation: fi-fade-out 110ms var(--ease-leave) forwards;
+  }
+}

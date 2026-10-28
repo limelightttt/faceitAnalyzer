@@ -83,6 +83,26 @@ async def test_api_retries_429_and_caches(tmp_path, monkeypatch):
     assert calls["n"] == 2
 
 
+async def test_fresh_rereads_a_live_match_but_never_a_finished_one(tmp_path):
+    room = {"match_id": "m1", "status": "READY"}
+    calls = {"n": 0}
+
+    def handler(req):
+        calls["n"] += 1
+        return httpx.Response(200, json=room)
+
+    api = _api(handler, tmp_path)
+    await api.get_match("m1")
+    await api.get_match("m1")  # within the live TTL: cached
+    assert calls["n"] == 1
+    await api.get_match("m1", fresh=True)  # a refresh asked for the current room
+    assert calls["n"] == 2
+    room["status"] = "FINISHED"
+    await api.get_match("m1", fresh=True)
+    await api.get_match("m1", fresh=True)  # final results never change: cache is enough
+    assert calls["n"] == 3
+
+
 async def test_api_errors(tmp_path):
     api = _api(lambda req: httpx.Response(401, json={}), tmp_path)
     with pytest.raises(ProviderError, match="FACEIT_API_KEY"):

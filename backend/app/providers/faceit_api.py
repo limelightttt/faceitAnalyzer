@@ -285,9 +285,11 @@ class FaceitApiProvider:
         )
         return [it.get("stats", it) for it in (data or {}).get("items", [])]
 
-    async def get_match(self, match_id: str) -> dict[str, Any] | None:
+    async def get_match(self, match_id: str, fresh: bool = False) -> dict[str, Any] | None:
         def ttl(body):
-            return None if str(body.get("status", "")).upper() in FINAL_STATUSES else TTL_LIVE_MATCH
+            if str(body.get("status", "")).upper() in FINAL_STATUSES:
+                return None
+            return 0 if fresh else TTL_LIVE_MATCH
 
         return await self._get(f"/matches/{match_id}", allow_404=True, ttl_fn=ttl)
 

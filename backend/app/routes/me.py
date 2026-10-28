@@ -19,6 +19,8 @@ class SettingsModel(BaseModel):
     show_risk_signals: bool = True
     timezone: str = Field(default="Europe/Moscow", max_length=64)
     watchlist: list[str] = Field(default_factory=list, max_length=30)
+    # nicknames you usually queue with: the default group for the stack map pool
+    teammates: list[str] = Field(default_factory=list, max_length=4)
 
 
 @router.get("/settings")

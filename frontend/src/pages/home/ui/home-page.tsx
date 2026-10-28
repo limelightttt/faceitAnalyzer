@@ -7,10 +7,9 @@ import { useOverview } from '@/entities/player'
 import { usePredictionMetrics } from '@/entities/prediction'
 import { useHistory, useSession } from '@/entities/session'
 import { LoginButtons } from '@/features/auth'
-import { PlayerSearch } from '@/features/player-search'
-import { ScoutLaunch } from '@/features/scout-launch'
+import { OmniSearch } from '@/features/omni-search'
 import { dateTime, fmt, pct } from '@/shared/lib/format'
-import { AsyncView, Card, CardContent, CardDescription, CardHeader, CardTitle, EmptyState, LoadingSkeleton, OfflineState, Progress, Skeleton, SkeletonText, SkeletonTiles, StatTile } from '@/shared/ui'
+import { AsyncView, Avatar, Button, Card, CardContent, CardDescription, CardHeader, CardTitle, EmptyState, LoadingSkeleton, OfflineState, Progress, Skeleton, SkeletonText, SkeletonTiles, StatTile } from '@/shared/ui'
 import { DemoList } from '@/widgets/demo-list'
 import { PlayerKpis } from '@/widgets/player-kpis'
 import { ServiceNotes } from '@/widgets/system-status'
@@ -29,23 +28,29 @@ function Dashboard({ nickname }: { nickname: string }) {
   const hist = useHistory(true)
   return (
     <div className="space-y-4">
-      <section className="flex flex-col gap-4 rounded-2xl border bg-card p-5 md:flex-row md:items-center md:justify-between">
-        <div>
-          <div className="text-xs text-muted-foreground">Ваш профиль</div>
-          <Link to={`/players/${encodeURIComponent(nickname)}`} className="text-2xl font-semibold tracking-tight hover:underline">
-            {nickname}
-          </Link>
-          {ov.data ? (
-            <div className="animate-fade-in text-xs text-muted-foreground tabular">
-              Elo {ov.data.profile.elo ?? '—'} · уровень {ov.data.profile.skill_level ?? '—'} · {ov.data.quality.matches_loaded} матчей в выборке
-            </div>
-          ) : (
-            ov.isPending && ov.fetchStatus === 'fetching' && <Skeleton className="mt-1.5 h-3 w-56" />
-          )}
+      <section className="grid gap-5 rounded-2xl border bg-card p-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)] lg:items-center">
+        <div className="flex items-center gap-4">
+          <Avatar src={ov.data?.profile.avatar} name={nickname} className="size-14 rounded-xl bg-gradient-to-br from-primary to-[#ff8a3d] text-xl font-bold text-white" />
+          <div className="min-w-0 flex-1">
+            <div className="text-xs text-muted-foreground">Ваш профиль</div>
+            <div className="truncate text-2xl font-semibold tracking-tight">{nickname}</div>
+            {ov.data ? (
+              <div className="animate-fade-in text-xs text-muted-foreground tabular">
+                Elo {ov.data.profile.elo ?? '—'} · уровень {ov.data.profile.skill_level ?? '—'} · {ov.data.quality.matches_loaded} матчей в выборке
+              </div>
+            ) : (
+              ov.isPending && ov.fetchStatus === 'fetching' && <Skeleton className="mt-1.5 h-3 w-56" />
+            )}
+          </div>
+          <Button asChild variant="secondary" className="shrink-0">
+            <Link to={`/players/${encodeURIComponent(nickname)}`}>
+              Мой профиль <ArrowRight />
+            </Link>
+          </Button>
         </div>
-        <div className="w-full space-y-2 md:max-w-xl">
-          <ScoutLaunch />
-          <PlayerSearch />
+        <div className="space-y-1.5">
+          <OmniSearch withDetect />
+          <p className="text-[11px] text-subtle-foreground">Совет: скопируйте ссылку на комнату на FACEIT и нажмите Ctrl+V в любом месте приложения — разведка начнётся сама.</p>
         </div>
       </section>
       <AsyncView query={ov} notFound="Ваш FACEIT-профиль не найден" skeleton={<LoadingSkeleton label="Загружаем вашу статистику"><SkeletonTiles count={6} className="md:grid-cols-3 xl:grid-cols-6" /></LoadingSkeleton>}>
@@ -183,8 +188,7 @@ export function HomePage() {
           ) : (
             <LoginButtons returnTo="/" size="lg" />
           )}
-          <ScoutLaunch />
-          <PlayerSearch />
+          <OmniSearch />
         </div>
       </section>
       <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">

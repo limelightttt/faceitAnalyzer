@@ -7,7 +7,7 @@ from ..auth.security import client_ip
 from ..db import Feedback, GameProfile, Prediction, PredictionOutcome, ScoutReport, utcnow
 from ..predictions import metrics, resolve_pending, serialize
 from ..providers.base import ProviderError
-from ..scout.service import job_stage, start_job
+from ..scout.service import job_stage, map_pick, match_phase, start_job
 from ..scout.url import parse_match_ref
 from ..state import AppState, Auth, get_db, get_state, require_access, require_user
 from .me import log_analysis
@@ -41,26 +41,32 @@ async def create_scout(
         raise HTTPException(
             400, "Не похоже на ссылку на комнату FACEIT: ожидается https://www.faceit.com/…/room/1-…"
         )
-    state.limiter.check(f"scout:{auth.user.id if auth.user else client_ip(request)}", 12)
+    user_id = auth.user.id if auth.user else None
+    state.limiter.check(f"scout:{user_id or client_ip(request)}", 12)
     if not body.refresh:
         q = select(ScoutReport).where(
             ScoutReport.match_id == match_id,
             ScoutReport.status.in_(["running", "done"]),
-            ScoutReport.user_id == (auth.user.id if auth.user else None),
+            ScoutReport.user_id == user_id,
         )
         recent = db.scalar(q.order_by(ScoutReport.created_at.desc()).limit(1))
         if recent and (utcnow() - recent.created_at).total_seconds() < REUSE_SECONDS:
             return {"id": recent.id, "match_id": match_id, "reused": True}
-    sid = start_job(state, match_id, auth.user.id if auth.user else None, _user_player(db, auth))
+    sid = start_job(state, match_id, user_id, _user_player(db, auth), fresh=body.refresh)
     return {"id": sid, "match_id": match_id, "reused": False}
 
 
-@router.get("/scout/{sid}")
-def get_scout(sid: str, db: Session = Depends(get_db), auth: Auth = Depends(require_access)):
+def _visible_report(db: Session, auth: Auth, sid: str) -> ScoutReport:
     row = db.get(ScoutReport, sid)
     # reports of signed-in users (with their prediction and "you" perspective) are private to their owner
     if row is None or (row.user_id is not None and (auth.user is None or auth.user.id != row.user_id)):
         raise HTTPException(404, "Отчёт не найден")
+    return row
+
+
+@router.get("/scout/{sid}")
+def get_scout(sid: str, db: Session = Depends(get_db), auth: Auth = Depends(require_access)):
+    row = _visible_report(db, auth, sid)
     pred = db.scalar(
         select(Prediction)
         .where(Prediction.match_id == row.match_id, Prediction.user_id == row.user_id)
@@ -83,6 +89,23 @@ def get_scout(sid: str, db: Session = Depends(get_db), auth: Auth = Depends(requ
         t = row.report["teams"]
         log_analysis(db, auth, "scout", row.id, f"{t['faction1']['name']} vs {t['faction2']['name']}")
     return out
+
+
+@router.get("/scout/{sid}/live")
+async def scout_live(
+    sid: str,
+    db: Session = Depends(get_db),
+    state: AppState = Depends(get_state),
+    auth: Auth = Depends(require_access),
+):
+    """Current state of the scouted match (FACEIT caches live matches for 20 s): lets an open report notice
+    that the map was picked or the match started."""
+    row = _visible_report(db, auth, sid)
+    details = await state.provider.get_match(row.match_id)
+    if not details:
+        raise HTTPException(404, "Матч не найден на FACEIT")
+    status = str(details.get("status", "")).upper()
+    return {"status": status, "phase": match_phase(status), "map": map_pick(details)}
 
 
 @router.get("/scout-detect")
