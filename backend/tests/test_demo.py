@@ -130,3 +130,27 @@ def test_real_demo_matches_independent_parser():
         assert (p[name]["kills"], p[name]["assists"], p[name]["adr"]) == (k, a, adr), name
     assert p["NIGHTSOUL"]["opening_kills"] == 5 and p["123"]["flashes"] == 15
     assert len(res["highlights"]) >= 1
+
+
+def test_demo_without_rounds_names_the_parser_version(monkeypatch, tmp_path):
+    """A demo newer than the parser reads as "no rounds": say which parser version gave up."""
+    import pandas as pd
+
+    from app.demo import parser
+
+    class NoEvents:
+        def __init__(self, path):
+            pass
+
+        def parse_header(self):
+            return {}
+
+        def list_game_events(self):
+            return []
+
+        def parse_ticks(self, *a, **kw):
+            return pd.DataFrame()
+
+    monkeypatch.setattr(parser, "DemoParser", NoEvents)
+    with pytest.raises(parser.DemoParseError, match=r"новее, чем понимает demoparser2 \d"):
+        parse_demo(tmp_path / "x.dem")

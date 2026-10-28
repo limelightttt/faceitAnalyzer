@@ -13,7 +13,10 @@ dependencies = [
     "numpy>=1.26",
     "scipy>=1.13",
     "pandas>=2.2",
-    "demoparser2==0.42.0",  # 0.42.1 ships Windows-only wheels
+    # 0.42.1 reads CS2 demos recorded since October 2026 (game events with invalid UTF-8 strings were
+    # dropped, round_end included) but has Windows wheels only; other platforms move up once published
+    "demoparser2==0.42.1; sys_platform == 'win32'",
+    "demoparser2==0.42.0; sys_platform != 'win32'",
     "zstandard>=0.22",
     "sqlalchemy>=2.0",
     "itsdangerous>=2.1",

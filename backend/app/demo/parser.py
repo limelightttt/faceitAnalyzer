@@ -140,7 +140,10 @@ def parse_demo(path: Path) -> NormalizedDemo:
 
     re_ = _events(p, "round_end", available)
     if not len(re_):
-        raise DemoParseError("В демо нет событий round_end — это не запись матча или файл обрезан")
+        raise DemoParseError(
+            "В демо не найдено ни одного конца раунда: файл обрезан, это не запись матча или формат "
+            f"демки новее, чем понимает demoparser2 {version('demoparser2')} — обновите приложение"
+        )
     re_ = (
         re_[(re_["tick"] >= match_start) & (re_["winner"].isin([2, 3]))]
         .drop_duplicates("tick")
