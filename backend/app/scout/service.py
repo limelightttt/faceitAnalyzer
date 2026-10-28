@@ -140,12 +140,17 @@ def _site_duels(team: list[PlayerFeatures], tac: dict[str, Any], mp: str) -> lis
 
 
 async def build_report(
-    provider, db: Database, match_id: str, user_player_id: str | None, progress=None
+    provider,
+    db: Database,
+    match_id: str,
+    user_player_id: str | None,
+    progress=None,
+    fresh: bool = False,
 ) -> dict[str, Any]:
     log: list[FetchRecord] = []
     token = fetch_log.set(log)
     try:
-        details = await provider.get_match(match_id)
+        details = await provider.get_match(match_id, fresh=fresh)
         if not details:
             raise ProviderError("Матч не найден на FACEIT (проверьте ссылку)", status=404)
         status = str(details.get("status", "")).upper()
@@ -330,7 +335,10 @@ def input_hash(report: dict[str, Any]) -> str:
     ).hexdigest()
 
 
-def start_job(state, match_id: str, user_id: int | None, user_player_id: str | None) -> str:
+def start_job(
+    state, match_id: str, user_id: int | None, user_player_id: str | None, fresh: bool = False
+) -> str:
+    """`fresh`: a requested refresh re-reads the room (map pick, rosters) instead of the short live cache."""
     sid = secrets.token_hex(6)
     with state.db.session() as s:
         s.add(ScoutReport(id=sid, match_id=match_id, user_id=user_id, status="running", progress=0.02))
@@ -343,7 +351,9 @@ def start_job(state, match_id: str, user_id: int | None, user_player_id: str | N
 
     async def run():
         try:
-            report = await build_report(state.provider, state.db, match_id, user_player_id, set_progress)
+            report = await build_report(
+                state.provider, state.db, match_id, user_player_id, set_progress, fresh=fresh
+            )
             with state.db.session() as s:
                 row = s.get(ScoutReport, sid)
                 row.status, row.progress, row.report = "done", 1.0, report

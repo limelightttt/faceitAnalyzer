@@ -4,7 +4,7 @@ param([int]$Port = 8000, [switch]$NoBrowser)
 
 $url = "http://localhost:$Port"
 if (Get-ServerProcess) {
-    $running = "http://localhost:$(Get-Port)"
+    $running = Get-AppUrl (Get-Port)
     Write-Host "Already running: $running"
     if (-not $NoBrowser) { Start-Process $running }
     exit 0
@@ -52,6 +52,7 @@ if (-not $health) {
     Remove-Item $PidFile -ErrorAction SilentlyContinue
     exit 1
 }
+$url = Get-AppUrl $Port
 Write-Host "FACEIT Intelligence is running: $url" -ForegroundColor Green
 if (-not $health.api_key_configured) { Write-Host "FACEIT_API_KEY is not set in $EnvFile - player data will not load." -ForegroundColor Yellow }
 Write-Host "Data: $data    Logs: $LogDir    Stop: stop.cmd"

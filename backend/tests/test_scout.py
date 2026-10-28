@@ -3,6 +3,7 @@
 import time
 
 import pytest
+from fastapi.testclient import TestClient
 
 from app.db import Prediction
 from app.scout.url import parse_match_ref
@@ -147,8 +148,6 @@ def test_detect_active_match_is_honest(world_app):
 
 def test_live_state_of_a_scouted_match(world_app):
     """An open report polls this to notice the map pick; other users cannot probe someone's report."""
-    import time
-
     client, world, mock = world_app
     csrf = login(client, "scout_me")
     w = mock.state.world
@@ -158,13 +157,26 @@ def test_live_state_of_a_scouted_match(world_app):
     ]
     live = client.get(f"/api/scout/{sid}/live").json()
     assert live == {"status": "READY", "phase": "pre", "map": None}
-    for _ in range(300):
-        if client.get(f"/api/scout/{sid}").json()["status"] != "running":
-            break
-        time.sleep(0.1)
-    assert client.get(f"/api/scout/{sid}").json()["report"]["map"] is None
-    from fastapi.testclient import TestClient
+    assert _wait(client, sid)["report"]["map"] is None
 
     other = TestClient(client.app, base_url="http://localhost:8000")
     login(other, "duo_a")
     assert other.get(f"/api/scout/{sid}/live").status_code == 404
+
+
+def test_refresh_rereads_the_room(world_app):
+    """Regression: "Обновить" right after the veto served the room from the 20 s live cache (old map)."""
+    client, world, mock = world_app
+    csrf = login(client, "scout_me")
+    room = mock.state.world["details"][world["upcoming"]]
+    room["voting"]["map"]["pick"] = []
+    sid = client.post("/api/scout", json={"url": world["upcoming"]}, headers={"X-CSRF-Token": csrf}).json()[
+        "id"
+    ]
+    assert _wait(client, sid)["report"]["map"] is None
+    room["voting"]["map"]["pick"] = ["de_nuke"]
+    again = client.post(
+        "/api/scout", json={"url": world["upcoming"], "refresh": True}, headers={"X-CSRF-Token": csrf}
+    ).json()
+    assert again["reused"] is False
+    assert _wait(client, again["id"])["report"]["map"] == "de_nuke"

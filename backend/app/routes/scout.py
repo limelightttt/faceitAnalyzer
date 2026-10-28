@@ -41,17 +41,18 @@ async def create_scout(
         raise HTTPException(
             400, "Не похоже на ссылку на комнату FACEIT: ожидается https://www.faceit.com/…/room/1-…"
         )
-    state.limiter.check(f"scout:{auth.user.id if auth.user else client_ip(request)}", 12)
+    user_id = auth.user.id if auth.user else None
+    state.limiter.check(f"scout:{user_id or client_ip(request)}", 12)
     if not body.refresh:
         q = select(ScoutReport).where(
             ScoutReport.match_id == match_id,
             ScoutReport.status.in_(["running", "done"]),
-            ScoutReport.user_id == (auth.user.id if auth.user else None),
+            ScoutReport.user_id == user_id,
         )
         recent = db.scalar(q.order_by(ScoutReport.created_at.desc()).limit(1))
         if recent and (utcnow() - recent.created_at).total_seconds() < REUSE_SECONDS:
             return {"id": recent.id, "match_id": match_id, "reused": True}
-    sid = start_job(state, match_id, auth.user.id if auth.user else None, _user_player(db, auth))
+    sid = start_job(state, match_id, user_id, _user_player(db, auth), fresh=body.refresh)
     return {"id": sid, "match_id": match_id, "reused": False}
 
 

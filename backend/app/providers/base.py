@@ -82,8 +82,8 @@ class FaceitProvider(Protocol):
     async def get_recent_match_stats(self, player_id: str, limit: int) -> list[dict[str, Any]]:
         """GET /players/{id}/games/cs2/stats -> items[].stats"""
 
-    async def get_match(self, match_id: str) -> dict[str, Any] | None:
-        """GET /matches/{id}"""
+    async def get_match(self, match_id: str, fresh: bool = False) -> dict[str, Any] | None:
+        """GET /matches/{id}; `fresh` skips the short cache of a live match (the room may have changed)"""
 
     async def get_match_stats(self, match_id: str) -> dict[str, Any] | None:
         """GET /matches/{id}/stats"""

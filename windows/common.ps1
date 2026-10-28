@@ -20,6 +20,26 @@ function Get-EnvValue([string]$Name) {
     return $null
 }
 
+function Set-EnvValue([string]$Name, [string]$Value) {
+    # Set NAME=value in backend\.env, replacing an existing (also commented-out) line or appending one.
+    # Other lines, comments and secrets are kept byte for byte; written as UTF-8 without BOM.
+    $lines = [System.Collections.Generic.List[string]]::new()
+    if (Test-Path $EnvFile) { $lines.AddRange([System.IO.File]::ReadAllLines($EnvFile)) }
+    $index = -1
+    for ($i = 0; $i -lt $lines.Count; $i++) {
+        if ($lines[$i] -match "^\s*#?\s*$Name\s*=") { $index = $i; break }
+    }
+    if ($index -ge 0) { $lines[$index] = "$Name=$Value" } else { $lines.Add("$Name=$Value") }
+    [System.IO.File]::WriteAllLines($EnvFile, $lines, (New-Object System.Text.UTF8Encoding $false))
+}
+
+function Get-AppUrl([int]$Port) {
+    # The address people open: the shared https one when Tailscale sharing is on, else localhost.
+    $base = Get-EnvValue 'APP_BASE_URL'
+    if ($base -like 'https://*') { return $base }
+    return "http://localhost:$Port"
+}
+
 function Get-DataDir {
     $configured = Get-EnvValue 'DATA_DIR'
     if ($configured) { return $configured }

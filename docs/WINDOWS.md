@@ -33,6 +33,7 @@
 | `start.cmd` | запускает приложение в фоне, ждёт готовности и открывает `http://localhost:8000`. Если интерфейс менялся (после `git pull`) — сначала пересобирает его |
 | `stop.cmd` | останавливает приложение (и процессы разбора демок) |
 | `status.cmd` | запущено ли, состояние ключа FACEIT, лимит запросов, пути к данным и логам |
+| `share.cmd` / `unshare.cmd` | открыть доступ друзьям через Tailscale / закрыть (см. ниже) |
 | `start.cmd -Port 8001` | другой порт, если 8000 занят (тогда и `APP_BASE_URL=http://localhost:8001` в `.env`) |
 
 Открывайте приложение именно по `http://localhost:8000` (как в `APP_BASE_URL`): с адреса `127.0.0.1` защита от CSRF
@@ -61,31 +62,31 @@ git pull
 * Закрытая бета: `BETA_ALLOWLIST=` — через запятую SteamID64 / FACEIT player id / ник FACEIT; пусто — войти может любой,
   кто может открыть страницу (а без Tailscale это только вы).
 
-## Необязательно: доступ с телефона/ноутбука через Tailscale (HTTPS, только ваши устройства)
+## Поделиться с друзьями через Tailscale (HTTPS, только приглашённые)
 
-Делайте это вручную и только если нужно. [Tailscale Serve](https://tailscale.com/kb/1312/serve) проксирует приложение
-внутри вашей приватной сети tailnet с HTTPS-сертификатом; в интернет оно **не** публикуется.
-**Не используйте `tailscale funnel`** — он открывает сервис всему интернету.
+[Tailscale Serve](https://tailscale.com/kb/1312/serve) открывает приложение по HTTPS только внутри вашей сети tailnet.
+В интернет оно **не** публикуется: Funnel скрипт никогда не включает. Роутер и брандмауэр не трогаются.
 
-1. Установите Tailscale на компьютер и на устройства, с которых будете заходить, войдите в один аккаунт.
-2. В админке Tailscale включите MagicDNS и HTTPS Certificates (DNS → HTTPS Certificates).
-3. На компьютере с приложением:
+1. Tailscale установлен на этом ПК, вы в него вошли. В [админке](https://login.tailscale.com/admin/dns) включены
+   MagicDNS и HTTPS Certificates. Если HTTPS не включён, при первом запуске Tailscale покажет ссылку — откройте её
+   один раз.
+2. Узнайте SteamID64 (17 цифр, `7656119…`): свой и друзей. Его видно в адресе профиля Steam или на steamid.io.
+   Вместо SteamID можно указать ник FACEIT.
+3. Одна команда в папке проекта:
    ```powershell
-   tailscale serve --bg 8000
-   tailscale serve status        # покажет адрес вида https://my-pc.tailnet-name.ts.net
+   .\share.cmd -Allow 7656119xxxxxxxxx1,7656119xxxxxxxxx2
    ```
-4. В `backend\.env`:
-   ```
-   APP_BASE_URL=https://my-pc.tailnet-name.ts.net
-   BETA_ALLOWLIST=ваш_ник_faceit,ник_друга
-   ```
-   При `https://` в `APP_BASE_URL` cookie сессии автоматически получают флаг `Secure`. Теперь открывайте приложение
-   **по этому адресу** и на самом компьютере (вход через Steam/FACEIT возвращает на `APP_BASE_URL`). Если хотите
-   по-прежнему заходить и по `http://localhost:8000`, добавьте `CORS_ORIGINS=["http://localhost:8000"]`.
-5. Для входа через FACEIT добавьте в FACEIT Developers redirect URI `https://my-pc.tailnet-name.ts.net/api/auth/faceit/callback`.
-6. `.\stop.cmd` и `.\start.cmd`.
+   Скрипт:
+   * включает `tailscale serve`;
+   * прописывает в `backend\.env` адрес `APP_BASE_URL=https://ваш-пк.tailXXXX.ts.net` и `BETA_ALLOWLIST`;
+   * перезапускает приложение и открывает адрес.
+4. Войдите по этому адресу через Steam сами.
+5. В открывшейся админке: Machines → этот ПК → **Share…** → отправьте приглашение другу. Он ставит Tailscale,
+   принимает приглашение и открывает тот же адрес.
+6. Для входа через FACEIT добавьте в FACEIT Developers redirect URI `https://ваш-пк.tailXXXX.ts.net/api/auth/faceit/callback`.
 
-Отключить: `tailscale serve reset`, верните `APP_BASE_URL=http://localhost:8000`, перезапустите.
+После этого `start.cmd` открывает общий адрес. Остановить доступ: `.\unshare.cmd` — Serve выключается, приложение
+снова только на `localhost`, список доступа сохраняется.
 
 ## Частые проблемы
 * **`running scripts is disabled`** — запускайте `.cmd`-файлы: они вызывают PowerShell с `-ExecutionPolicy Bypass` только для

@@ -16,8 +16,8 @@
 
 ## Запуск
 
-**Windows 11:** `setup.cmd` один раз, затем `start.cmd` / `stop.cmd` / `status.cmd` — см. [docs/WINDOWS.md](docs/WINDOWS.md)
-(только localhost, без автозапуска; доступ с телефона — по желанию через Tailscale Serve).
+**Windows 11:** `setup.cmd` один раз, затем `start.cmd` / `stop.cmd` / `status.cmd`. Поделиться с друзьями:
+`share.cmd -Allow <SteamID64>,…` (Tailscale, только приглашённые). Подробно — [docs/WINDOWS.md](docs/WINDOWS.md).
 
 **macOS / Linux:** нужны Python ≥ 3.11 с [uv](https://docs.astral.sh/uv/) и Node.js ≥ 20.
 
@@ -38,7 +38,8 @@ make serve                             # API + интерфейс на http://lo
 * Steam и FACEIT можно привязать к одной учётной записи в «Настройках».
 * Закрытая бета: данные доступны только после входа (`REQUIRE_LOGIN=true`). `BETA_ALLOWLIST` — список SteamID64 / FACEIT
   id / ников, которым разрешён вход. `TRACKING_INTERVAL_MINUTES` — как часто сохранять реальный Elo привязанных игроков
-  (0 — выключить). `DATA_DIR` — где хранить базу, кэш и демки.
+  (0 — выключить). `PREDICTION_CHECK_MINUTES` — как часто сверять прогнозы с итогами матчей (по умолчанию 20).
+  `DATA_DIR` — где хранить базу, кэш и демки.
 
 ### Проверка с настоящим FACEIT
 ```bash
@@ -50,7 +51,7 @@ make live-check NICK=ваш_ник ROOM=https://www.faceit.com/ru/cs2/room/1-…
 ## Проверки
 
 ```bash
-make test        # backend pytest (77 тестов) + frontend vitest (29)
+make test        # backend pytest (89 тестов) + frontend vitest (48)
 make lint        # ruff + tsc + eslint
 make mock-stack  # в другом терминале: стек против MOCK FACEIT API (тестовый мир, не реальные данные)
 make e2e         # браузерный E2E Phase II (Playwright): вход, разведка, прогноз→результат, настройки, коуч, демки
