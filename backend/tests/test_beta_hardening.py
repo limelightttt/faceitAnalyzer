@@ -6,6 +6,7 @@ import time
 
 import httpx
 import pytest
+import zstandard
 from fastapi.testclient import TestClient
 from sqlalchemy import func, select
 
@@ -126,6 +127,18 @@ def test_same_match_uploaded_twice_is_counted_once(tmp_path):
         assert keys() == 1  # different file, same match -> same fingerprint
         assert c.delete(f"/api/demos/{third['id']}", headers=h).status_code == 204
         assert keys() == 1  # still referenced by the others
+
+
+@pytest.mark.skipif(not SAMPLE_DEMO.exists(), reason="sample demo not downloaded")
+def test_repeat_download_name_is_still_a_demo(tmp_path):
+    """Regression: a browser saves a second download of "x.dem.zst" as "x.dem (1).zst" and it was refused."""
+    app, _ = _app(tmp_path)
+    packed = zstandard.ZstdCompressor(level=1).compress(SAMPLE_DEMO.read_bytes())
+    with _client(app) as c:
+        h = {"X-CSRF-Token": login(c, "scout_me")}
+        r = c.post("/api/demos", files={"file": ("x.dem (1).zst", packed)}, headers=h)
+        assert r.status_code == 202
+        assert _wait_demo(c, r.json()["id"])["status"] == "done"
 
 
 def test_decompression_bomb_and_corrupt_archives_are_rejected(tmp_path):

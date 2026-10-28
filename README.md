@@ -51,7 +51,7 @@ make live-check NICK=ваш_ник ROOM=https://www.faceit.com/ru/cs2/room/1-…
 ## Проверки
 
 ```bash
-make test        # backend pytest (89 тестов) + frontend vitest (48)
+make test        # backend pytest (90 тестов) + frontend vitest (50)
 make lint        # ruff + tsc + eslint
 make mock-stack  # в другом терминале: стек против MOCK FACEIT API (тестовый мир, не реальные данные)
 make e2e         # браузерный E2E Phase II (Playwright): вход, разведка, прогноз→результат, настройки, коуч, демки

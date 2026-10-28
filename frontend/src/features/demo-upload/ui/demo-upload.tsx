@@ -12,7 +12,7 @@ import { notify } from '@/shared/lib/notify'
 import { useSingleFlight } from '@/shared/lib/use-single-flight'
 import { Button, InlineError, Progress } from '@/shared/ui'
 
-const ACCEPT = ['.dem', '.dem.gz', '.dem.bz2', '.dem.zst']
+import { DEMO_EXTENSIONS, isDemoFileName } from '../model/file-name'
 
 /** Drop zone with an honest lifecycle: choose → upload (real bytes %) → hand-over to the server, which
  * then parses in the background (the demo page shows that stage). Failed uploads can be retried with the
@@ -45,7 +45,7 @@ export function DemoUpload({ className }: { className?: string }) {
 
   const pick = (f: File | undefined) => {
     if (!f || uploading) return
-    if (!ACCEPT.some((ext) => f.name.toLowerCase().endsWith(ext))) {
+    if (!isDemoFileName(f.name)) {
       setLocalError('Нужен файл .dem (или архив .dem.gz / .dem.bz2 / .dem.zst)')
       return
     }
@@ -112,7 +112,7 @@ export function DemoUpload({ className }: { className?: string }) {
         ref={input}
         type="file"
         className="hidden"
-        accept=".dem,.gz,.bz2,.zst"
+        accept={DEMO_EXTENSIONS.join(',')}
         onChange={(e) => {
           pick(e.target.files?.[0])
           e.target.value = '' // choosing the same file again must trigger a new upload

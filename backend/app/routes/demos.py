@@ -7,7 +7,8 @@ from ..state import AppState, Auth, get_db, get_state, require_access
 from .me import log_analysis
 
 router = APIRouter(prefix="/api/demos", tags=["demos"])
-UPLOAD_SUFFIXES = (".dem", ".dem.gz", ".dem.bz2", ".dem.zst")
+# only the last extension counts ("match.dem (1).zst" is a repeat download); the content is checked on unpack
+UPLOAD_SUFFIXES = (".dem", ".gz", ".bz2", ".zst")
 
 
 def _uid(auth: Auth) -> int | None:
