@@ -38,10 +38,31 @@ PRE_MATCH = {"READY", "VOTING", "CONFIGURING", "SCHEDULED", "CHECK_IN", "SUBSTIT
 FINISHED = {"FINISHED"}
 DEAD = {"CANCELLED", "ABORTED"}
 
+
+def match_phase(status: str) -> str:
+    """FACEIT match status -> "pre" | "live" | "post" | "dead" | "unknown"."""
+    if status in PRE_MATCH:
+        return "pre"
+    if status == "ONGOING":
+        return "live"
+    if status in FINISHED:
+        return "post"
+    return "dead" if status in DEAD else "unknown"
+
+
+def map_pick(details: dict[str, Any]) -> str | None:
+    """The map chosen in the match room, or None while the veto is still running."""
+    picks = ((details.get("voting") or {}).get("map") or {}).get("pick") or []
+    return norm_map(picks[0]) if picks else None
+
+
 _tasks: set[asyncio.Task] = set()
 
 
-async def _player_bundle(provider, roster: dict[str, Any], faction: str) -> PlayerFeatures:
+async def player_bundle(
+    provider, roster: dict[str, Any], faction: str, recent_n: int = RECENT_N, history_n: int = HISTORY_N
+) -> PlayerFeatures:
+    """Everything the scout needs about one player; per-endpoint failures become `errors`, not exceptions."""
     pid = roster["player_id"]
     errors = []
 
@@ -57,8 +78,8 @@ async def _player_bundle(provider, roster: dict[str, Any], faction: str) -> Play
     profile, lifetime, recent, history = await asyncio.gather(
         safe(provider.get_player_by_id(pid), "профиль", None),
         safe(provider.get_lifetime_stats(pid), "статистика", None),
-        safe(provider.get_recent_match_stats(pid, RECENT_N), "матчи", []),
-        safe(provider.get_history(pid, HISTORY_N), "история", []),
+        safe(provider.get_recent_match_stats(pid, recent_n), "матчи", []),
+        safe(provider.get_history(pid, history_n), "история", []),
     )
     f = build_features(faction, roster, profile, lifetime, recent, history)
     f.errors = errors
@@ -131,8 +152,7 @@ async def build_report(
         factions = details.get("teams") or {}
         if not {"faction1", "faction2"} <= set(factions):
             raise ProviderError("У матча ещё нет составов команд", status=409)
-        picks = ((details.get("voting") or {}).get("map") or {}).get("pick") or []
-        mp = norm_map(picks[0]) if picks else None
+        mp = map_pick(details)
         rosters = []
         seen: set[str] = set()
         for fk in ("faction1", "faction2"):
@@ -147,7 +167,7 @@ async def build_report(
 
         async def one(fk, r):
             nonlocal done
-            f = await _player_bundle(provider, r, fk)
+            f = await player_bundle(provider, r, fk)
             done += 1
             if progress:
                 progress(PLAYERS_START + (BRIEFING_START - PLAYERS_START) * done / max(1, len(rosters)))
@@ -242,15 +262,7 @@ async def build_report(
     return {
         "match_id": match_id,
         "status": status,
-        "phase": "pre"
-        if status in PRE_MATCH
-        else "live"
-        if status == "ONGOING"
-        else "post"
-        if status in FINISHED
-        else "dead"
-        if status in DEAD
-        else "unknown",
+        "phase": match_phase(status),
         "map": mp,
         "map_pool": pool,
         "competition": details.get("competition_name"),

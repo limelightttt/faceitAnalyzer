@@ -106,6 +106,13 @@ def create_mock(world=None) -> FastAPI:
     def upcoming():
         return {"match_id": w["upcoming"], "me": w["me"].nick}
 
+    @app.post("/admin/pick/{mid}")
+    async def pick(mid: str, request: Request):
+        """E2E: set the map chosen in the room ({"map": "de_nuke"}) or reopen the veto ({"map": null})."""
+        mp = (await request.json()).get("map")
+        w["details"][mid]["voting"]["map"]["pick"] = [mp] if mp else []
+        return {"map": mp}
+
     @app.post("/admin/finish/{mid}")
     async def finish(mid: str, request: Request):
         d = w["details"][mid]

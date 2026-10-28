@@ -9,5 +9,5 @@ uv run python -m tests.support.mock_faceit --port 8901 &
 MOCK=$!
 trap 'kill $MOCK 2>/dev/null' EXIT
 FACEIT_API_BASE=http://127.0.0.1:8901/data/v4 FACEIT_API_KEY=test-key FACEIT_REQUESTS_PER_SECOND=50 \
-AUTH_DEV_LOGIN=true DATA_DIR="$DATA" APP_BASE_URL=http://localhost:8000 \
+AUTH_DEV_LOGIN=true DATA_DIR="$DATA" APP_BASE_URL=http://localhost:8000 PREDICTION_CHECK_MINUTES=0 \
 uv run uvicorn app.main:app --port 8000

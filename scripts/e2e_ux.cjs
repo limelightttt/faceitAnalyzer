@@ -82,7 +82,7 @@ const FAST_3G = { latency: 563, downloadThroughput: (1.6 * 1024 * 1024) / 8, upl
   start('mock', ['python', '-m', 'tests.support.mock_faceit', '--port', '8912'])
   start('app', ['uvicorn', 'app.main:app', '--host', '127.0.0.1', '--port', '8020'], {
     FACEIT_API_BASE: `${MOCK}/data/v4`, FACEIT_API_KEY: 'test-key', FACEIT_REQUESTS_PER_SECOND: '25',
-    AUTH_DEV_LOGIN: 'true', DATA_DIR: DATA, APP_BASE_URL: BASE, REQUIRE_LOGIN: 'true', TRACKING_INTERVAL_MINUTES: '0',
+    AUTH_DEV_LOGIN: 'true', DATA_DIR: DATA, APP_BASE_URL: BASE, REQUIRE_LOGIN: 'true', TRACKING_INTERVAL_MINUTES: '0', PREDICTION_CHECK_MINUTES: '0',
     CORS_ORIGINS: JSON.stringify([BASE]),
   })
   await waitUrl(`${MOCK}/admin/upcoming`)

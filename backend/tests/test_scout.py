@@ -143,3 +143,28 @@ def test_detect_active_match_is_honest(world_app):
     login(client, "scout_me")
     r = client.get("/api/scout-detect").json()
     assert r["found"] is False and "ссылку" in r["reason"]
+
+
+def test_live_state_of_a_scouted_match(world_app):
+    """An open report polls this to notice the map pick; other users cannot probe someone's report."""
+    import time
+
+    client, world, mock = world_app
+    csrf = login(client, "scout_me")
+    w = mock.state.world
+    w["details"][world["upcoming"]]["voting"]["map"]["pick"] = []  # veto still running
+    sid = client.post("/api/scout", json={"url": world["upcoming"]}, headers={"X-CSRF-Token": csrf}).json()[
+        "id"
+    ]
+    live = client.get(f"/api/scout/{sid}/live").json()
+    assert live == {"status": "READY", "phase": "pre", "map": None}
+    for _ in range(300):
+        if client.get(f"/api/scout/{sid}").json()["status"] != "running":
+            break
+        time.sleep(0.1)
+    assert client.get(f"/api/scout/{sid}").json()["report"]["map"] is None
+    from fastapi.testclient import TestClient
+
+    other = TestClient(client.app, base_url="http://localhost:8000")
+    login(other, "duo_a")
+    assert other.get(f"/api/scout/{sid}/live").status_code == 404

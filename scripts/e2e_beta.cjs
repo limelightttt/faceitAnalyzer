@@ -50,7 +50,7 @@ const startMock = () => start('mock', ['python', '-m', 'tests.support.mock_facei
 const startApp = () =>
   start('app', ['uvicorn', 'app.main:app', '--host', '127.0.0.1', '--port', '8010'], {
     FACEIT_API_BASE: `${MOCK}/data/v4`, FACEIT_API_KEY: 'test-key', FACEIT_REQUESTS_PER_SECOND: '50',
-    AUTH_DEV_LOGIN: 'true', DATA_DIR: DATA, APP_BASE_URL: BASE, REQUIRE_LOGIN: 'true', TRACKING_INTERVAL_MINUTES: '0',
+    AUTH_DEV_LOGIN: 'true', DATA_DIR: DATA, APP_BASE_URL: BASE, REQUIRE_LOGIN: 'true', TRACKING_INTERVAL_MINUTES: '0', PREDICTION_CHECK_MINUTES: '0',
     CORS_ORIGINS: JSON.stringify([BASE]),
   })
 
