@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
-import { apiGet, apiPost, apiPut, setCsrfToken } from '@/shared/api/client'
+import { apiDelete, apiGet, apiPost, apiPut, setCsrfToken } from '@/shared/api/client'
 
 import type { Session, UserSettings } from '../model/types'
 
@@ -13,12 +13,14 @@ export const useSession = () =>
       return s
     },
     staleTime: 60_000,
+    meta: { silent: true },
   })
 
 export const useLogout = () => {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: () => apiPost('/auth/logout'),
+    meta: { errorContext: 'Выход' },
     onSuccess: () => {
       setCsrfToken(null)
       qc.clear()
@@ -34,7 +36,17 @@ export const useSaveSettings = () => {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (s: UserSettings) => apiPut<UserSettings>('/me/settings', s),
+    meta: { success: 'Настройки сохранены', inlineError: true },
     onSuccess: (data) => qc.setQueryData(['settings'], data),
+  })
+}
+
+export const useUnlinkIdentity = () => {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (provider: string) => apiDelete(`/auth/identities/${provider}`),
+    meta: { success: 'Привязка удалена', errorContext: 'Отвязка' },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['session'] }),
   })
 }
 

@@ -1,1 +1,2 @@
-export { MapChip, ResultPill, ratingTone } from './ui/result'
+export { ratingTone } from './lib/rating'
+export { MapChip, ResultPill } from './ui/result'

@@ -30,6 +30,7 @@ export const useResolvePredictions = () => {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: () => apiPost<{ checked: number; resolved: number }>('/predictions/resolve'),
+    meta: { errorContext: 'Проверка прогнозов' },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['predictions'] })
       qc.invalidateQueries({ queryKey: ['prediction-metrics'] })
@@ -43,6 +44,7 @@ export const useSendFeedback = () => {
   return useMutation({
     mutationFn: (body: { match_id?: string; prediction_id?: number; target: string; verdict: 'correct' | 'incorrect' | 'unsure'; comment?: string }) =>
       apiPost<{ id: number }>('/feedback', body),
+    meta: { errorContext: 'Отзыв не сохранён' },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['feedback'] }),
   })
 }

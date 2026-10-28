@@ -61,8 +61,8 @@ export function ScoutHeader({ job, onRefresh, refreshing }: { job: ScoutJob; onR
               </a>
             </Button>
           )}
-          <Button size="sm" variant="secondary" onClick={onRefresh} disabled={refreshing}>
-            <RefreshCw className={cn(refreshing && 'animate-spin')} /> Обновить
+          <Button size="sm" variant="secondary" onClick={onRefresh} loading={refreshing}>
+            <RefreshCw /> Обновить
           </Button>
         </div>
       </div>
@@ -137,7 +137,7 @@ export function PredictionPanel({ job }: { job: ScoutJob }) {
           <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
             <span>Результат ещё не проверен.</span>
             {session?.authenticated && (
-              <Button size="sm" variant="secondary" onClick={() => resolve.mutate()} disabled={resolve.isPending}>
+              <Button size="sm" variant="secondary" onClick={() => resolve.mutate()} loading={resolve.isPending}>
                 Проверить результат
               </Button>
             )}

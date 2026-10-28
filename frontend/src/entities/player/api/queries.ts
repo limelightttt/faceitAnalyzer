@@ -16,7 +16,9 @@ function usePlayerResource<T>(nick: string, limit: number, resource: string) {
     queryFn: ({ signal }) => apiGet<T>(`/players/${enc(nick)}/${resource}?limit=${limit}`, signal),
     enabled: Boolean(nick),
     staleTime: 60_000,
-    retry: (count, err) => count < 1 && !(err as { status?: number }).status?.toString().startsWith('4'),
+    // switching the sample size keeps the current numbers on screen until the new ones arrive
+    // (never across players: another nickname starts from a clean loading state)
+    placeholderData: (prev, prevQuery) => (prevQuery?.queryKey[1] === nick.toLowerCase() ? prev : undefined),
   })
 }
 
@@ -27,12 +29,3 @@ export const useElo = (nick: string, limit: number) => usePlayerResource<EloRepo
 export const useMatchmaking = (nick: string, limit: number) => usePlayerResource<Matchmaking>(nick, limit, 'matchmaking')
 export const useMatchDetail = (nick: string, limit: number, matchId: string) =>
   usePlayerResource<MatchDetail>(nick, limit, `matches/${enc(matchId)}`)
-
-export const useHealth = () =>
-  useQuery({
-    queryKey: ['health'],
-    queryFn: ({ signal }) =>
-      apiGet<{ status: string; provider: string; api_key_configured: boolean; demo_parser: string; auth: { steam: boolean; faceit: boolean }; rate_limit: { limited: boolean; retry_in_s: number; retry_at: string | null } | null; require_login: boolean; private_beta: boolean }>('/health', signal),
-    staleTime: 15_000,
-    refetchInterval: 30_000,
-  })

@@ -7,7 +7,7 @@ import { useSession } from '@/entities/session'
 import { LoginButtons } from '@/features/auth'
 import { cn } from '@/shared/lib/cn'
 import { dateTime, fmt, mapName, pct } from '@/shared/lib/format'
-import { axisProps, Badge, Button, Card, CardContent, CardDescription, CardHeader, CardTitle, ChartTooltipBox, EmptyState, ErrorState, gridProps, PageSkeleton, Progress, Select, Table, TBody, TD, TH, THead, TR } from '@/shared/ui'
+import { AsyncView, axisProps, Badge, Button, Card, CardContent, CardDescription, CardHeader, CardTitle, ChartTooltipBox, ConfirmButton, EmptyState, gridProps, LoadingSkeleton, Progress, Select, Skeleton, SkeletonCard, SkeletonChart, SkeletonText, Table, TBody, TD, TH, THead, TR } from '@/shared/ui'
 
 function fmtMetric(meta: CoachOverview['metrics'][string] | undefined, v: number | null) {
   if (v === null || v === undefined || !meta) return '—'
@@ -19,7 +19,7 @@ function GoalCard({ g, meta }: { g: CoachGoal; meta: CoachOverview['metrics'][st
   const p = g.progress
   const frac = p.fraction === null ? 0 : Math.max(0, Math.min(1, p.fraction))
   return (
-    <div className="rounded-xl border p-4">
+    <div className="animate-enter rounded-xl border p-4">
       <div className="flex items-start justify-between gap-2">
         <div>
           <div className="text-sm font-medium">
@@ -30,9 +30,9 @@ function GoalCard({ g, meta }: { g: CoachGoal; meta: CoachOverview['metrics'][st
             база {fmtMetric(meta, g.baseline)} ({g.baseline_n} матч.) → цель {fmtMetric(meta, g.target)} ({g.direction === 'up' ? 'выше' : 'ниже'} — лучше)
           </div>
         </div>
-        <Button variant="destructive" size="icon" aria-label="Удалить цель" onClick={() => del.mutate(g.id)}>
+        <ConfirmButton size="icon" aria-label="Удалить цель" onConfirm={() => del.mutate(g.id)} loading={del.isPending}>
           <Trash2 />
-        </Button>
+        </ConfirmButton>
       </div>
       <Progress value={Math.round(frac * 100)} className="mt-3" />
       <div className="mt-1.5 flex justify-between text-xs text-muted-foreground">
@@ -57,10 +57,9 @@ function NewGoal({ data }: { data: CoachOverview }) {
       {meta?.needs_map && (
         <Select label="Карта" value={map} onChange={setMap} options={['de_mirage', 'de_inferno', 'de_dust2', 'de_nuke', 'de_ancient', 'de_anubis', 'de_train'].map((m) => ({ value: m, label: mapName(m) }))} />
       )}
-      <Button size="sm" onClick={() => create.mutate({ metric, map: meta?.needs_map ? map : null })} disabled={create.isPending}>
+      <Button size="sm" onClick={() => create.mutate({ metric, map: meta?.needs_map ? map : null })} loading={create.isPending}>
         <Target /> Поставить цель
       </Button>
-      {create.error instanceof Error && <span className="text-xs text-critical-text">{create.error.message}</span>}
     </div>
   )
 }
@@ -69,8 +68,7 @@ export function CoachPage() {
   const { data: session } = useSession()
   const coach = useCoach(Boolean(session?.authenticated))
   const create = useCreateGoal()
-  if (!session) return <PageSkeleton />
-  if (!session.authenticated)
+  if (!session?.authenticated)
     return (
       <EmptyState title="Коуч работает с вашим профилем">
         <div className="mt-2 space-y-3">
@@ -79,9 +77,32 @@ export function CoachPage() {
         </div>
       </EmptyState>
     )
-  if (coach.isLoading) return <PageSkeleton />
-  if (coach.error || !coach.data) return <ErrorState error={coach.error ?? 'Нет данных'} />
-  const d = coach.data
+  return (
+    <AsyncView query={coach} notFound="FACEIT-профиль для коучинга не найден" skeleton={<CoachSkeleton />}>
+      {(d) => <Coach d={d} create={create} />}
+    </AsyncView>
+  )
+}
+
+function CoachSkeleton() {
+  return (
+    <LoadingSkeleton label="Готовим персональный разбор" className="space-y-4">
+      <Skeleton className="h-6 w-72" />
+      <Skeleton className="mt-2 h-3 w-[32rem] max-w-full" />
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1.4fr_1fr]">
+        <SkeletonCard>
+          <SkeletonChart height={224} />
+        </SkeletonCard>
+        <SkeletonCard>
+          <SkeletonText lines={6} />
+        </SkeletonCard>
+      </div>
+      <SkeletonCard bodyHeight={120} />
+    </LoadingSkeleton>
+  )
+}
+
+function Coach({ d, create }: { d: CoachOverview; create: ReturnType<typeof useCreateGoal> }) {
   const chart = [...d.weekly].reverse()
   return (
     <div className="space-y-4">
@@ -147,15 +168,21 @@ export function CoachPage() {
             <CardDescription>Только метрики, где вы статистически ниже своих лобби</CardDescription>
           </CardHeader>
           <CardContent className="space-y-2">
-            {d.suggestions.length === 0 && <EmptyState title="Выраженных слабых мест не найдено">Нужна большая выборка или данные демок.</EmptyState>}
+            {d.suggestions.length === 0 && <EmptyState title="Выраженных слабых мест не найдено" className="p-6">Нужна большая выборка или данные демок.</EmptyState>}
             {d.suggestions.map((s) => (
               <div key={s.metric} className="flex items-start justify-between gap-3 rounded-lg border p-3">
                 <div>
                   <div className="text-sm font-medium">{s.label}</div>
                   <div className="text-xs text-muted-foreground">{s.why}</div>
                 </div>
-                <Button size="sm" variant="secondary" onClick={() => create.mutate({ metric: s.metric })} disabled={create.isPending || d.goals.some((g) => g.metric === s.metric)}>
-                  Цель
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => create.mutate({ metric: s.metric })}
+                  loading={create.isPending && create.variables?.metric === s.metric}
+                  disabled={create.isPending || d.goals.some((g) => g.metric === s.metric)}
+                >
+                  {d.goals.some((g) => g.metric === s.metric) ? 'Есть цель' : 'Цель'}
                 </Button>
               </div>
             ))}
@@ -176,7 +203,7 @@ export function CoachPage() {
           <NewGoal data={d} />
         </CardHeader>
         <CardContent className="grid gap-3 md:grid-cols-2">
-          {d.goals.length === 0 ? <EmptyState title="Целей пока нет" /> : d.goals.map((g) => <GoalCard key={g.id} g={g} meta={d.metrics[g.metric]} />)}
+          {d.goals.length === 0 ? <EmptyState title="Целей пока нет" className="p-6 md:col-span-2">Выберите метрику выше — базовый уровень зафиксируется в момент постановки.</EmptyState> : d.goals.map((g) => <GoalCard key={g.id} g={g} meta={d.metrics[g.metric]} />)}
         </CardContent>
       </Card>
       <Card>

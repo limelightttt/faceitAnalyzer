@@ -210,6 +210,8 @@ export interface ScoutJob {
   match_id: string
   status: 'running' | 'done' | 'error'
   progress: number
+  /** the real step the server is in (absent on servers older than this UI) */
+  stage?: 'match' | 'players' | 'briefing' | 'done' | 'error'
   error: string | null
   created_at: string
   report: ScoutReport | null

@@ -1,17 +1,19 @@
 import { Activity, ArrowRight, FileVideo, GraduationCap, Radar, ShieldQuestion, Target } from 'lucide-react'
+import type { CSSProperties } from 'react'
 import { Link } from 'react-router-dom'
 
 import { useCoach } from '@/entities/coach'
-import { useHealth, useOverview } from '@/entities/player'
+import { useOverview } from '@/entities/player'
 import { usePredictionMetrics } from '@/entities/prediction'
 import { useHistory, useSession } from '@/entities/session'
 import { LoginButtons } from '@/features/auth'
 import { PlayerSearch } from '@/features/player-search'
 import { ScoutLaunch } from '@/features/scout-launch'
 import { dateTime, fmt, pct } from '@/shared/lib/format'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, EmptyState, ErrorState, Progress, Skeleton, StatTile } from '@/shared/ui'
+import { AsyncView, Card, CardContent, CardDescription, CardHeader, CardTitle, EmptyState, LoadingSkeleton, Progress, Skeleton, SkeletonText, SkeletonTiles, StatTile } from '@/shared/ui'
 import { DemoList } from '@/widgets/demo-list'
 import { PlayerKpis } from '@/widgets/player-kpis'
+import { ServiceNotes } from '@/widgets/system-status'
 
 const FEATURES = [
   { icon: Radar, title: 'BEFORE — разведка', text: 'Ссылка на комнату → брифинг по обеим командам, угрозы, связки, риск-профили.' },
@@ -19,26 +21,6 @@ const FEATURES = [
   { icon: Activity, title: 'AFTER — что произошло', text: 'Прогноз фиксируется до матча и сверяется с результатом.' },
   { icon: GraduationCap, title: 'IMPROVE — как расти', text: 'Цели по измеренным слабым местам, недельные сводки, ошибки из демок.' },
 ]
-
-export function RateLimitNote() {
-  const h = useHealth()
-  const rl = h.data?.rate_limit
-  if (!rl?.limited) return null
-  return (
-    <div className="rounded-lg border border-warning/50 bg-warning/10 px-3 py-2 text-xs">
-      Лимит запросов FACEIT API исчерпан. Новые данные появятся примерно через {Math.ceil(rl.retry_in_s / 60)} мин
-      {rl.retry_at && ` (после ${new Date(rl.retry_at).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })})`}. Уже загруженное доступно из кэша.
-    </div>
-  )
-}
-
-function HealthNote() {
-  const h = useHealth()
-  if (!h.data) return null
-  if (!h.data.api_key_configured)
-    return <div className="rounded-lg border border-critical/40 bg-critical/5 px-3 py-2 text-xs">FACEIT Data API не настроен (FACEIT_API_KEY). Статистика и разведка недоступны, работают только демки.</div>
-  return <RateLimitNote />
-}
 
 function Dashboard({ nickname }: { nickname: string }) {
   const ov = useOverview(nickname, 50)
@@ -53,10 +35,12 @@ function Dashboard({ nickname }: { nickname: string }) {
           <Link to={`/players/${encodeURIComponent(nickname)}`} className="text-2xl font-semibold tracking-tight hover:underline">
             {nickname}
           </Link>
-          {ov.data && (
-            <div className="text-xs text-muted-foreground tabular">
+          {ov.data ? (
+            <div className="animate-fade-in text-xs text-muted-foreground tabular">
               Elo {ov.data.profile.elo ?? '—'} · уровень {ov.data.profile.skill_level ?? '—'} · {ov.data.quality.matches_loaded} матчей в выборке
             </div>
+          ) : (
+            ov.isPending && <Skeleton className="mt-1.5 h-3 w-56" />
           )}
         </div>
         <div className="w-full space-y-2 md:max-w-xl">
@@ -64,7 +48,9 @@ function Dashboard({ nickname }: { nickname: string }) {
           <PlayerSearch />
         </div>
       </section>
-      {ov.isLoading ? <Skeleton className="h-28" /> : ov.error ? <ErrorState error={ov.error} /> : ov.data && <PlayerKpis data={ov.data} />}
+      <AsyncView query={ov} notFound="Ваш FACEIT-профиль не найден" skeleton={<LoadingSkeleton label="Загружаем вашу статистику"><SkeletonTiles count={6} className="md:grid-cols-3 xl:grid-cols-6" /></LoadingSkeleton>}>
+        {(d) => <PlayerKpis data={d} />}
+      </AsyncView>
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
         <Card>
           <CardHeader>
@@ -73,7 +59,11 @@ function Dashboard({ nickname }: { nickname: string }) {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            {coach.data?.goals.length ? (
+            {coach.isPending ? (
+              <LoadingSkeleton label="Загружаем цели">
+                <SkeletonText lines={4} />
+              </LoadingSkeleton>
+            ) : coach.data?.goals.length ? (
               coach.data.goals.slice(0, 3).map((g) => (
                 <div key={g.id}>
                   <div className="flex justify-between text-xs">
@@ -84,22 +74,32 @@ function Dashboard({ nickname }: { nickname: string }) {
                 </div>
               ))
             ) : (
-              <EmptyState title="Целей нет">
-                <Link to="/coach" className="underline">
-                  Открыть коуча
-                </Link>
-              </EmptyState>
+              <EmptyState
+                title={coach.error ? 'Цели сейчас недоступны' : 'Целей пока нет'}
+                className="p-5"
+                action={
+                  <Link to="/coach" className="text-xs underline underline-offset-4 hover:text-foreground">
+                    Открыть коуча
+                  </Link>
+                }
+              />
             )}
           </CardContent>
         </Card>
         <Card>
           <CardHeader>
             <CardTitle>Качество прогнозов</CardTitle>
-            <CardDescription>Проверено {pm.data?.scored ?? 0} · нужно 30+ для выводов</CardDescription>
+            <CardDescription>{pm.data ? `Проверено ${pm.data.scored} · нужно 30+ для выводов` : 'Нужно 30+ проверенных прогнозов для выводов'}</CardDescription>
           </CardHeader>
           <CardContent className="grid grid-cols-2 gap-2">
-            <StatTile label="Brier" value={pm.data?.brier ?? '—'} hint="монетка 0.25" className="p-3" />
-            <StatTile label="Фаворит угадан" value={pct(pm.data?.favourite_accuracy ?? null)} className="p-3" />
+            {pm.isPending ? (
+              <SkeletonTiles count={2} className="col-span-2 grid-cols-2 md:grid-cols-2 [&>*]:p-3" />
+            ) : (
+              <>
+                <StatTile label="Brier" value={pm.data?.brier ?? '—'} hint="монетка 0.25" className="p-3" />
+                <StatTile label="Фаворит угадан" value={pct(pm.data?.favourite_accuracy ?? null)} className="p-3" />
+              </>
+            )}
             <Link to="/predictions" className="col-span-2 text-xs text-muted-foreground hover:text-foreground">
               Все прогнозы <ArrowRight className="inline size-3" />
             </Link>
@@ -110,15 +110,21 @@ function Dashboard({ nickname }: { nickname: string }) {
             <CardTitle>История анализов</CardTitle>
           </CardHeader>
           <CardContent>
-            {!hist.data?.length ? (
-              <EmptyState title="Пока пусто" />
+            {hist.isPending ? (
+              <LoadingSkeleton label="Загружаем историю">
+                <SkeletonText lines={5} />
+              </LoadingSkeleton>
+            ) : !hist.data?.length ? (
+              <EmptyState title="Пока пусто" className="p-5">
+                Здесь появятся открытые игроки, разведки и демки.
+              </EmptyState>
             ) : (
               <div className="divide-y text-sm">
                 {hist.data.slice(0, 6).map((h) => (
                   <Link
                     key={h.kind + h.ref + h.at}
                     to={h.kind === 'scout' ? `/scout/${h.ref}` : h.kind === 'demo' ? `/demos/${h.ref}` : `/players/${encodeURIComponent(h.ref)}`}
-                    className="flex justify-between gap-2 py-2 hover:text-primary"
+                    className="-mx-2 flex justify-between gap-2 rounded-md px-2 py-2 transition-colors hover:bg-card-2/60 hover:text-primary"
                   >
                     <span className="truncate">
                       <span className="mr-1.5 text-[10px] text-subtle-foreground uppercase">{h.kind}</span>
@@ -143,18 +149,17 @@ function Dashboard({ nickname }: { nickname: string }) {
 }
 
 export function HomePage() {
-  const { data: session, isLoading } = useSession()
-  if (isLoading) return <Skeleton className="h-64" />
+  const { data: session } = useSession()
   if (session?.authenticated && session.game_profile)
     return (
       <div className="space-y-4">
-        <HealthNote />
+        <ServiceNotes />
         <Dashboard nickname={session.game_profile.nickname} />
       </div>
     )
   return (
     <div className="space-y-8">
-      <HealthNote />
+      <ServiceNotes />
       <section className="relative overflow-hidden rounded-2xl border bg-card p-6 md:p-10">
         <div className="pointer-events-none absolute -top-24 -right-24 size-72 rounded-full bg-primary/15 blur-3xl" />
         <div className="relative max-w-2xl space-y-5">
@@ -177,8 +182,8 @@ export function HomePage() {
         </div>
       </section>
       <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-        {FEATURES.map((f) => (
-          <div key={f.title} className="rounded-xl border bg-card p-4">
+        {FEATURES.map((f, i) => (
+          <div key={f.title} className="animate-enter rounded-xl border bg-card p-4" style={{ '--i': i + 1 } as CSSProperties}>
             <f.icon className="size-5 text-primary" />
             <div className="mt-3 text-sm font-semibold">{f.title}</div>
             <div className="mt-1 text-xs text-muted-foreground">{f.text}</div>

@@ -2,11 +2,12 @@ import { CheckCircle2, Clock, XCircle } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { Bar, BarChart, CartesianGrid, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 
-import { usePredictionMetrics, usePredictions, useResolvePredictions } from '@/entities/prediction'
+import { type PredictionMetrics, usePredictionMetrics, usePredictions, useResolvePredictions } from '@/entities/prediction'
 import { useSession } from '@/entities/session'
 import { LoginButtons } from '@/features/auth'
 import { dateTime, pct } from '@/shared/lib/format'
-import { axisProps, Button, Card, CardContent, CardDescription, CardHeader, CardTitle, ChartTooltipBox, EmptyState, gridProps, Legend, PageSkeleton, StatTile, Table, TBody, TD, TH, THead, TR } from '@/shared/ui'
+import { AsyncView, axisProps, Button, Card, CardContent, CardDescription, CardHeader, CardTitle, ChartTooltipBox, EmptyState, gridProps, Legend, LoadingSkeleton, Notice, SkeletonCard, SkeletonChart, SkeletonTable, SkeletonTiles, StatTile, Table, TBody, TD, TH, THead, TR } from '@/shared/ui'
+import { notify } from '@/shared/lib/notify'
 
 export function PredictionsPage() {
   const { data: session } = useSession()
@@ -14,15 +15,19 @@ export function PredictionsPage() {
   const list = usePredictions(authed)
   const m = usePredictionMetrics(authed)
   const resolve = useResolvePredictions()
-  if (!session) return <PageSkeleton />
   if (!authed)
     return (
       <EmptyState title="Проверка прогнозов привязана к аккаунту">
         <LoginButtons returnTo="/predictions" className="mt-3 justify-center" />
       </EmptyState>
     )
-  const d = m.data
-  const enough = (d?.scored ?? 0) >= (d?.min_for_conclusions ?? 30)
+  const check = () =>
+    resolve.mutate(undefined, {
+      onSuccess: (r) =>
+        r.resolved > 0
+          ? notify.success(`Закрыто прогнозов: ${r.resolved}`, { description: `Проверено матчей: ${r.checked}. Метрики обновлены.` })
+          : notify.info('Новых результатов нет', { description: r.checked ? `Проверено матчей: ${r.checked} — ещё не завершены.` : 'Все прогнозы уже сверены с результатами.' }),
+    })
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-end justify-between gap-3">
@@ -32,22 +37,46 @@ export function PredictionsPage() {
             Каждый предматчевый снимок хранится неизменным; после матча он сравнивается с результатом. Никакого «самообучения» — только прозрачные метрики.
           </p>
         </div>
-        <Button variant="secondary" onClick={() => resolve.mutate()} disabled={resolve.isPending}>
+        <Button variant="secondary" onClick={check} loading={resolve.isPending}>
           {resolve.isPending ? 'Проверяем…' : 'Проверить завершённые матчи'}
         </Button>
       </div>
-      {resolve.data && <div className="text-xs text-muted-foreground">Проверено {resolve.data.checked}, закрыто {resolve.data.resolved}.</div>}
+      {resolve.data && <div className="animate-fade-in text-xs text-muted-foreground">Проверено {resolve.data.checked}, закрыто {resolve.data.resolved}.</div>}
+      <AsyncView query={m} skeleton={<MetricsSkeleton />}>
+        {(d) => <Metrics d={d} />}
+      </AsyncView>
+      <PredictionList list={list} />
+    </div>
+  )
+}
+
+function MetricsSkeleton() {
+  return (
+    <LoadingSkeleton label="Считаем метрики прогнозов" className="space-y-4">
+      <SkeletonTiles count={4} />
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+        <SkeletonCard>
+          <SkeletonChart height={224} />
+        </SkeletonCard>
+        <SkeletonCard>
+          <SkeletonChart height={224} />
+        </SkeletonCard>
+      </div>
+    </LoadingSkeleton>
+  )
+}
+
+function Metrics({ d }: { d: PredictionMetrics }) {
+  const enough = d.scored >= d.min_for_conclusions
+  return (
+    <div className="space-y-4">
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         <StatTile label="Проверено прогнозов" value={d?.scored ?? 0} hint={enough ? 'достаточно для выводов' : `выводы — от ${d?.min_for_conclusions ?? 30}`} />
         <StatTile label="Brier score" value={d?.brier ?? '—'} hint="ниже — лучше; монетка = 0.25" />
         <StatTile label="Точность фаворита" value={pct(d?.favourite_accuracy ?? null)} hint={`n = ${d?.favourite_n ?? 0}`} />
         <StatTile label="Skill vs монетка" value={d?.skill_vs_baseline === undefined ? '—' : `${(d.skill_vs_baseline * 100).toFixed(1)}%`} hint="1 − Brier/0.25" />
       </div>
-      {!enough && (
-        <div className="rounded-lg border border-warning/40 bg-warning/10 px-3 py-2 text-xs">
-          Пока проверено меньше {d?.min_for_conclusions ?? 30} прогнозов — метрики сильно зависят от случая и не говорят о качестве модели.
-        </div>
-      )}
+      {!enough && <Notice tone="warning">Пока проверено меньше {d.min_for_conclusions} прогнозов — метрики сильно зависят от случая и не говорят о качестве модели.</Notice>}
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
         <Card>
           <CardHeader>
@@ -131,12 +160,22 @@ export function PredictionsPage() {
           </div>
         </CardContent>
       </Card>
+    </div>
+  )
+}
+
+function PredictionList({ list }: { list: ReturnType<typeof usePredictions> }) {
+  return (
       <Card>
         <CardHeader>
           <CardTitle>Все прогнозы</CardTitle>
         </CardHeader>
         <CardContent className="px-0 pb-2">
-          {!list.data?.length ? (
+          {list.isPending ? (
+            <LoadingSkeleton label="Загружаем прогнозы">
+              <SkeletonTable rows={5} cols={6} />
+            </LoadingSkeleton>
+          ) : !list.data?.length ? (
             <div className="px-5 pb-3">
               <EmptyState title="Прогнозов пока нет">Запустите разведку предстоящего матча — снимок прогноза сохранится автоматически.</EmptyState>
             </div>
@@ -190,6 +229,5 @@ export function PredictionsPage() {
           )}
         </CardContent>
       </Card>
-    </div>
   )
 }

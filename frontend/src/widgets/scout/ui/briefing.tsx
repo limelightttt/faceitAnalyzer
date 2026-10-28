@@ -3,7 +3,7 @@ import { useState } from 'react'
 
 import { EvidenceChip, type ScoutJob } from '@/entities/scout'
 import { FeedbackButtons } from '@/features/feedback'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, Tabs, TabsList, TabsTrigger } from '@/shared/ui'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, EmptyState, Tabs, TabsList, TabsTrigger } from '@/shared/ui'
 
 const CAT: Record<string, { icon: typeof Shield; label: string }> = {
   strength: { icon: Swords, label: 'Баланс' },
@@ -37,7 +37,8 @@ export function Briefing({ job }: { job: ScoutJob }) {
         </Tabs>
       </CardHeader>
       <CardContent>
-        <ol className="space-y-2">
+        {items.length === 0 && <EmptyState title="Нет пунктов этого типа" className="p-6" />}
+        <ol key={filter} className="animate-fade-in space-y-2">
           {items.map((b) => {
             const c = CAT[b.category] ?? CAT.strength
             return (
@@ -49,7 +50,12 @@ export function Briefing({ job }: { job: ScoutJob }) {
                     <div className="mt-2 flex flex-wrap items-center gap-2">
                       <EvidenceChip kind={b.kind} />
                       {b.confidence && <span className="text-[11px] text-subtle-foreground">уровень: {b.confidence}</span>}
-                      <button type="button" className="text-[11px] text-muted-foreground underline-offset-4 hover:underline" onClick={() => setOpen(open === b.id ? null : b.id)}>
+                      <button
+                        type="button"
+                        aria-expanded={open === b.id}
+                        className="rounded text-[11px] text-muted-foreground underline-offset-4 hover:underline focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                        onClick={() => setOpen(open === b.id ? null : b.id)}
+                      >
                         {open === b.id ? 'скрыть доказательства' : 'доказательства'}
                       </button>
                       <span className="ml-auto">
@@ -57,7 +63,7 @@ export function Briefing({ job }: { job: ScoutJob }) {
                       </span>
                     </div>
                     {open === b.id && (
-                      <pre className="mt-2 max-h-64 overflow-auto rounded-md bg-background/60 p-2 text-[11px] leading-snug text-muted-foreground">
+                      <pre className="animate-enter mt-2 max-h-64 overflow-auto rounded-md bg-background/60 p-2 text-[11px] leading-snug text-muted-foreground">
                         {JSON.stringify(b.evidence, null, 1)}
                       </pre>
                     )}

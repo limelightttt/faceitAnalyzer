@@ -8,14 +8,22 @@ export const useScoutJob = (id: string) =>
   useQuery({
     queryKey: ['scout', id],
     queryFn: ({ signal }) => apiGet<ScoutJob>(`/scout/${id}`, signal),
-    refetchInterval: (q) => (q.state.data?.status === 'running' ? 800 : false),
+    // poll while the server works; stop polling (but keep data) while the connection is down
+    refetchInterval: (q) => (q.state.data?.status === 'running' ? 1000 : false),
   })
 
-export const useStartScout = () =>
-  useMutation({ mutationFn: (body: { url: string; refresh?: boolean }) => apiPost<{ id: string; match_id: string; reused: boolean }>('/scout', body) })
+/** `inline`: the caller renders the error next to its form instead of a toast. */
+export const useStartScout = ({ inline = false } = {}) =>
+  useMutation({
+    mutationFn: (body: { url: string; refresh?: boolean }) => apiPost<{ id: string; match_id: string; reused: boolean }>('/scout', body),
+    meta: { inlineError: inline, errorContext: 'Разведка не запущена' },
+  })
 
 export const useDetectMatch = () =>
-  useMutation({ mutationFn: () => apiGet<{ found: boolean; match_id?: string; reason?: string }>('/scout-detect') })
+  useMutation({
+    mutationFn: () => apiGet<{ found: boolean; match_id?: string; reason?: string }>('/scout-detect'),
+    meta: { inlineError: true },
+  })
 
 export interface MapGeometry {
   map: string

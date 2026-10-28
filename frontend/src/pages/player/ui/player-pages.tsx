@@ -1,10 +1,11 @@
 import { ArrowLeft, ExternalLink } from 'lucide-react'
+import type { ReactNode } from 'react'
 import { Link, useParams } from 'react-router-dom'
 
 import { MapChip, ResultPill } from '@/entities/match'
 import { useBestWorst, useElo, useInsights, useMatchDetail, useMatchmaking, useOverview } from '@/entities/player'
 import { dateTime, fmt } from '@/shared/lib/format'
-import { Button, ErrorState, PageSkeleton, StatTile } from '@/shared/ui'
+import { AsyncView, Button, LoadingSkeleton, type QueryState, StatTile } from '@/shared/ui'
 import { BestWorst } from '@/widgets/best-worst'
 import { EloPanel } from '@/widgets/elo-panel'
 import { InsightsPanel } from '@/widgets/insights-panel'
@@ -15,12 +16,16 @@ import { MatchmakingPanel } from '@/widgets/matchmaking-panel'
 import { PlayerKpis } from '@/widgets/player-kpis'
 import { RatingTrend } from '@/widgets/rating-trend'
 
-import { usePlayerParams } from './player-layout'
+import { usePlayerParams } from '../model/params'
+import { ChartsSkeleton, MatchSkeleton, OverviewSkeleton, TableSkeleton, TwoCardsSkeleton } from './skeletons'
 
-function Guard<T>({ q, children }: { q: { data?: T; error: unknown; isLoading: boolean }; children: (d: T) => React.ReactNode }) {
-  if (q.isLoading) return <PageSkeleton />
-  if (q.error || !q.data) return <ErrorState error={q.error ?? 'Нет данных'} />
-  return <>{children(q.data)}</>
+/** A player tab: its own query, its own content-shaped skeleton. */
+function Tab<T>({ q, skeleton, label, notFound, children }: { q: QueryState<T>; skeleton: ReactNode; label: string; notFound?: string; children: (d: T) => ReactNode }) {
+  return (
+    <AsyncView query={q} notFound={notFound} skeleton={<LoadingSkeleton label={label}>{skeleton}</LoadingSkeleton>}>
+      {children}
+    </AsyncView>
+  )
 }
 
 export function PlayerOverviewPage() {
@@ -28,7 +33,7 @@ export function PlayerOverviewPage() {
   const ov = useOverview(nickname, limit)
   const ins = useInsights(nickname, limit)
   return (
-    <Guard q={ov}>
+    <Tab q={ov} label="Загружаем обзор" skeleton={<OverviewSkeleton />}>
       {(d) => (
         <div className="space-y-4">
           <PlayerKpis data={d} />
@@ -38,52 +43,76 @@ export function PlayerOverviewPage() {
           </div>
           <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1.6fr_1fr]">
             <MatchesTable matches={d.matches} nickname={nickname} search={search} limit={8} title="Последние матчи" />
-            {ins.data && <InsightsPanel data={ins.data} compact />}
+            {/* secondary panel: loads on its own and never blocks the overview */}
+            {ins.data ? <InsightsPanel data={ins.data} compact /> : ins.isPending ? <TwoCardsSkeleton /> : null}
           </div>
         </div>
       )}
-    </Guard>
+    </Tab>
   )
 }
 
 export function PlayerMatchesPage() {
   const { nickname, limit, search } = usePlayerParams()
-  return <Guard q={useOverview(nickname, limit)}>{(d) => <MatchesTable matches={d.matches} nickname={nickname} search={search} />}</Guard>
+  return (
+    <Tab q={useOverview(nickname, limit)} label="Загружаем матчи" skeleton={<TableSkeleton />}>
+      {(d) => <MatchesTable matches={d.matches} nickname={nickname} search={search} />}
+    </Tab>
+  )
 }
 
 export function PlayerComparePage() {
   const { nickname, limit, search } = usePlayerParams()
-  return <Guard q={useBestWorst(nickname, limit)}>{(d) => <BestWorst data={d} nickname={nickname} search={search} />}</Guard>
+  return (
+    <Tab q={useBestWorst(nickname, limit)} label="Сравниваем лучшие и худшие матчи" skeleton={<TwoCardsSkeleton />}>
+      {(d) => <BestWorst data={d} nickname={nickname} search={search} />}
+    </Tab>
+  )
 }
 
 export function PlayerInsightsPage() {
   const { nickname, limit } = usePlayerParams()
-  return <Guard q={useInsights(nickname, limit)}>{(d) => <InsightsPanel data={d} />}</Guard>
+  return (
+    <Tab q={useInsights(nickname, limit)} label="Ищем сильные и слабые стороны" skeleton={<TwoCardsSkeleton />}>
+      {(d) => <InsightsPanel data={d} />}
+    </Tab>
+  )
 }
 
 export function PlayerEloPage() {
   const { nickname, limit } = usePlayerParams()
-  return <Guard q={useElo(nickname, limit)}>{(d) => <EloPanel data={d} />}</Guard>
+  return (
+    <Tab q={useElo(nickname, limit)} label="Загружаем историю Elo" skeleton={<ChartsSkeleton />}>
+      {(d) => <EloPanel data={d} />}
+    </Tab>
+  )
 }
 
 export function PlayerMatchmakingPage() {
   const { nickname, limit } = usePlayerParams()
-  return <Guard q={useMatchmaking(nickname, limit)}>{(d) => <MatchmakingPanel data={d} />}</Guard>
+  return (
+    <Tab q={useMatchmaking(nickname, limit)} label="Анализируем матчмейкинг" skeleton={<ChartsSkeleton />}>
+      {(d) => <MatchmakingPanel data={d} />}
+    </Tab>
+  )
 }
 
 export function MatchDetailPage() {
   const { nickname, limit, search } = usePlayerParams()
   const { matchId = '' } = useParams()
+  const back = (
+    <Button variant="ghost" size="sm" asChild>
+      <Link to={`/players/${encodeURIComponent(nickname)}/matches${search}`}>
+        <ArrowLeft /> К матчам
+      </Link>
+    </Button>
+  )
   return (
-    <Guard q={useMatchDetail(nickname, limit, matchId)}>
+    <Tab q={useMatchDetail(nickname, limit, matchId)} label="Загружаем матч" notFound="Матч не найден в выборке игрока" skeleton={<MatchSkeleton />}>
       {(d) => (
         <div className="space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <Button variant="ghost" size="sm" asChild>
-              <Link to={`/players/${encodeURIComponent(nickname)}/matches${search}`}>
-                <ArrowLeft /> К матчам
-              </Link>
-            </Button>
+            {back}
             <div className="flex items-center gap-3 text-sm">
               <ResultPill won={d.row.won} />
               <MapChip map={d.match.map} />
@@ -114,6 +143,6 @@ export function MatchDetailPage() {
           </p>
         </div>
       )}
-    </Guard>
+    </Tab>
   )
 }
