@@ -29,10 +29,10 @@ export function ThemeToggle() {
     <Button
       variant="ghost"
       size="icon"
-      aria-label="Переключить тему"
+      aria-label={theme === 'dark' ? 'Включить светлую тему' : 'Включить тёмную тему'}
       onClick={() => setTheme((t) => (t === 'dark' ? 'light' : 'dark'))}
     >
-      {theme === 'dark' ? <Sun /> : <Moon />}
+      {theme === 'dark' ? <Sun key="sun" className="animate-pop-in" /> : <Moon key="moon" className="animate-pop-in" />}
     </Button>
   )
 }

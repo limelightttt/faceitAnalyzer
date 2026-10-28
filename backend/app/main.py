@@ -113,7 +113,10 @@ def create_app(settings: Settings | None = None, provider: object | None = None)
             import time as _t
 
             headers["Retry-After"] = str(max(1, int(exc.retry_at - _t.time())))
-        return JSONResponse(status_code=exc.status, content={"detail": str(exc)}, headers=headers)
+        # "source" lets the UI tell "FACEIT is unavailable / rate-limited" from "this server is down"
+        return JSONResponse(
+            status_code=exc.status, content={"detail": str(exc), "source": "faceit"}, headers=headers
+        )
 
     @app.exception_handler(StarletteHTTPException)
     async def http_error(request, exc: StarletteHTTPException):

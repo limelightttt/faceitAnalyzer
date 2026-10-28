@@ -19,6 +19,20 @@ from .features import PlayerFeatures, build_features, norm_map
 ALGO_VERSION = "scout-v1 (elo-baseline-v1, risk-v1, chemistry-v1)"
 RECENT_N = 30
 PLAYER_TIMEOUT_S = 90
+# Job progress milestones: [0, PLAYERS_START) match + rosters, then players, then [BRIEFING_START, 1) briefing.
+PLAYERS_START = 0.1
+BRIEFING_START = 0.9
+
+
+def job_stage(status: str, progress: float) -> str:
+    """Which real step a scout job is in, for the UI ("match" | "players" | "briefing" | status)."""
+    if status != "running":
+        return status
+    if progress < PLAYERS_START:
+        return "match"
+    return "players" if progress < BRIEFING_START else "briefing"
+
+
 HISTORY_N = 30
 PRE_MATCH = {"READY", "VOTING", "CONFIGURING", "SCHEDULED", "CHECK_IN", "SUBSTITUTION", "MANUAL_RESULT"}
 FINISHED = {"FINISHED"}
@@ -128,13 +142,15 @@ async def build_report(
                     rosters.append((fk, r))
         done = 0
         players: list[PlayerFeatures] = []
+        if progress:
+            progress(PLAYERS_START)  # match and rosters are known; per-player collection starts
 
         async def one(fk, r):
             nonlocal done
             f = await _player_bundle(provider, r, fk)
             done += 1
             if progress:
-                progress(0.1 + 0.8 * done / max(1, len(rosters)))
+                progress(PLAYERS_START + (BRIEFING_START - PLAYERS_START) * done / max(1, len(rosters)))
             return f
 
         players = list(await asyncio.gather(*(one(fk, r) for fk, r in rosters)))

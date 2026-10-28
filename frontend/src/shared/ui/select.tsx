@@ -26,7 +26,7 @@ export function Select({
       <SelectPrimitive.Trigger
         aria-label={label}
         className={cn(
-          'inline-flex h-8 items-center justify-between gap-2 rounded-lg border bg-card px-3 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+          'inline-flex h-8 items-center justify-between gap-2 rounded-lg border bg-card px-3 text-xs transition-colors hover:bg-card-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
           className,
         )}
       >
@@ -34,13 +34,13 @@ export function Select({
         <ChevronDown className="size-3.5 opacity-60" />
       </SelectPrimitive.Trigger>
       <SelectPrimitive.Portal>
-        <SelectPrimitive.Content position="popper" sideOffset={4} className="z-50 max-h-72 min-w-36 overflow-hidden rounded-lg border bg-card shadow-lg">
+        <SelectPrimitive.Content position="popper" sideOffset={4} className="popover-motion z-50 max-h-72 min-w-36 overflow-hidden rounded-lg border bg-card shadow-lg">
           <SelectPrimitive.Viewport className="p-1">
             {options.map((o) => (
               <SelectPrimitive.Item
                 key={o.value}
                 value={o.value}
-                className="relative flex cursor-pointer items-center rounded-md py-1.5 pr-2 pl-7 text-xs outline-none select-none data-[highlighted]:bg-card-2"
+                className="relative flex cursor-pointer items-center rounded-md py-1.5 pr-2 pl-7 text-xs outline-none select-none transition-colors data-[highlighted]:bg-card-2"
               >
                 <SelectPrimitive.ItemIndicator className="absolute left-2">
                   <Check className="size-3.5" />

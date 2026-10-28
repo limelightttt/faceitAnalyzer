@@ -6,6 +6,7 @@ Then: FACEIT_API_BASE=http://127.0.0.1:8901/data/v4 FACEIT_API_KEY=test-key uvic
 """
 
 import argparse
+import asyncio
 
 from fastapi import FastAPI, Header, HTTPException, Request
 
@@ -19,6 +20,19 @@ def create_mock(world=None) -> FastAPI:
     by_steam = {p.steam: p for p in w["people"]}
     app = FastAPI()
     app.state.world = w
+    app.state.latency_s = 0.0
+
+    @app.middleware("http")
+    async def latency(request: Request, call_next):
+        # E2E only: simulate a slow FACEIT for the data API (set through /admin/latency)
+        if app.state.latency_s and request.url.path.startswith("/data/"):
+            await asyncio.sleep(app.state.latency_s)
+        return await call_next(request)
+
+    @app.post("/admin/latency/{ms}")
+    def set_latency(ms: int):
+        app.state.latency_s = max(0, ms) / 1000
+        return {"latency_ms": ms}
 
     def auth(authorization: str | None):
         if authorization != "Bearer test-key":

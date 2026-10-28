@@ -1,11 +1,11 @@
-import { ArrowLeft, Loader2 } from 'lucide-react'
+import { ArrowLeft, FileUp } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 
 import { useDemo } from '@/entities/demo'
 import { MapChip } from '@/entities/match'
 import { clock } from '@/shared/lib/format'
-import { Button, ErrorState, PageSkeleton, StatTile } from '@/shared/ui'
+import { Button, ErrorState, JobProgress, LoadingSkeleton, Skeleton, SkeletonCard, SkeletonTable, SkeletonTiles, StatTile } from '@/shared/ui'
 import { DemoPlayerInsights } from '@/widgets/demo-player-insights'
 import { DemoScoreboard } from '@/widgets/demo-scoreboard'
 import { HighlightsList } from '@/widgets/highlights-list'
@@ -15,7 +15,7 @@ import { RoundTimeline } from '@/widgets/round-timeline'
 export function DemoDetailPage() {
   const { demoId = '' } = useParams()
   const [params, setParams] = useSearchParams()
-  const { data, error, isLoading } = useDemo(demoId)
+  const { data, error, refetch } = useDemo(demoId)
   const [focusState, setFocus] = useState<string | null>(null)
   const round = Number(params.get('round') ?? 1)
   const selectRound = (n: number) => {
@@ -25,17 +25,36 @@ export function DemoDetailPage() {
     document.getElementById('round-detail')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
   }
 
-  if (isLoading) return <PageSkeleton />
-  if (error || !data) return <ErrorState error={error ?? 'Демо не найдено'} />
+  const toList = (
+    <Button asChild size="sm" variant="ghost">
+      <Link to="/demos">
+        <FileUp /> Загрузить другую демку
+      </Link>
+    </Button>
+  )
+  if (!data) {
+    if (error) return <ErrorState error={error} notFound="Демка не найдена" onRetry={refetch} action={toList} />
+    return (
+      <LoadingSkeleton label="Открываем разбор демки">
+        <DemoSkeleton />
+      </LoadingSkeleton>
+    )
+  }
   const { meta, analysis } = data
-  if (meta.status === 'error') return <ErrorState error={meta.error ?? 'Ошибка парсинга'} action={<Link to="/demos" className="text-xs underline">К списку демок</Link>} />
+  if (meta.status === 'error') return <ErrorState error={meta.error ?? 'Не удалось разобрать демку'} action={toList} />
   if (!analysis)
     return (
-      <div className="flex flex-col items-center gap-3 rounded-xl border bg-card p-12 text-center">
-        <Loader2 className="size-6 animate-spin text-primary" />
-        <div className="text-sm font-medium">Парсим демку «{meta.file_name}»…</div>
-        <div className="text-xs text-muted-foreground">Обычно занимает 5–30 секунд в зависимости от размера файла. Страница обновится сама.</div>
-      </div>
+      <JobProgress
+        title={`Разбираем «${meta.file_name}»`}
+        value={null}
+        steps={[
+          { key: 'upload', label: 'Файл загружен на сервер', state: 'done' },
+          { key: 'queue', label: 'Очередь на разбор', state: meta.status === 'queued' ? 'active' : 'done' },
+          { key: 'parse', label: 'Разбор раундов, убийств и позиций', state: meta.status === 'parsing' ? 'active' : 'pending' },
+          { key: 'done', label: 'Таймлайн, хайлайты и выводы', state: 'pending' },
+        ]}
+        note="Обычно занимает 5–30 секунд в зависимости от размера файла. Сервер не сообщает точный процент — поэтому шкала без цифр. Можно уйти со страницы: когда разбор закончится, появится уведомление."
+      />
     )
 
   const focus = focusState ?? analysis.players.slice().sort((a, b) => b.rating - a.rating)[0]?.steamid ?? null
@@ -91,6 +110,26 @@ export function DemoDetailPage() {
           ))}
         </ul>
       </details>
+    </div>
+  )
+}
+
+function DemoSkeleton() {
+  return (
+    <div className="space-y-4">
+      <Skeleton className="h-8 w-28 rounded-lg" />
+      <div className="flex flex-col gap-4 rounded-xl border bg-card p-5 md:flex-row md:items-center md:justify-between">
+        <div className="space-y-3">
+          <Skeleton className="h-4 w-64" />
+          <Skeleton className="h-8 w-80 max-w-full" />
+          <Skeleton className="h-3 w-48" />
+        </div>
+        <SkeletonTiles count={3} className="grid-cols-3 md:grid-cols-3 [&>*]:p-3" />
+      </div>
+      <Skeleton className="h-24 rounded-xl" />
+      <SkeletonCard className="px-0 [&>*:not(:last-child)]:mx-5">
+        <SkeletonTable rows={10} cols={8} />
+      </SkeletonCard>
     </div>
   )
 }

@@ -1,1 +1,2 @@
-export { SampleSizeSelect, useSampleSize } from './ui/sample-size'
+export { useSampleSize } from './model/use-sample-size'
+export { SampleSizeSelect } from './ui/sample-size'

@@ -36,6 +36,7 @@ export const useCreateGoal = () => {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (b: { metric: string; map?: string | null; target?: number | null }) => apiPost('/coach/goals', b),
+    meta: { success: 'Цель поставлена', errorContext: 'Цель' },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['coach'] }),
   })
 }
@@ -44,6 +45,7 @@ export const useDeleteGoal = () => {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (id: number) => apiDelete(`/coach/goals/${id}`),
+    meta: { success: 'Цель удалена', errorContext: 'Удаление цели' },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['coach'] }),
   })
 }

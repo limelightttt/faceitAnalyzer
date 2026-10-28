@@ -88,6 +88,7 @@ def test_unknown_match_is_a_clean_error(tmp_path):
     mock = create_mock()
     j = _run(tmp_path, mock, httpx.ASGITransport(app=mock), url="1-00000000-0000-4000-8000-000000000000")
     assert j["status"] == "error" and "не найден" in j["error"]
+    assert j["stage"] == "error"
 
 
 def test_partial_player_failures_do_not_break_the_report(tmp_path):
@@ -96,7 +97,7 @@ def test_partial_player_failures_do_not_break_the_report(tmp_path):
     broken = [w["smurf"].pid]
     empty = [w["duo"][0].pid]
     j = _run(tmp_path, mock, Flaky(mock, broken_players=broken, empty_stats=empty))
-    assert j["status"] == "done"
+    assert j["status"] == "done" and j["stage"] == "done"
     rep = j["report"]
     players = {p["nickname"]: p for t in rep["teams"].values() for p in t["players"]}
     assert len(players) == 10
@@ -144,3 +145,32 @@ def test_finished_match_has_result_and_no_prediction(tmp_path):
     j = _run(tmp_path, mock, httpx.ASGITransport(app=mock), url=finished)
     assert j["report"]["phase"] == "post" and j["report"]["result"]["winner"] in ("faction1", "faction2")
     assert j["prediction"] is None
+
+
+def test_job_stage_follows_real_milestones():
+    from app.scout.service import job_stage
+
+    assert job_stage("running", 0.02) == "match"
+    assert job_stage("running", 0.1) == "players"
+    assert job_stage("running", 0.82) == "players"
+    assert job_stage("running", 0.9) == "briefing"
+    assert job_stage("done", 1.0) == "done"
+
+
+def test_faceit_errors_are_marked_with_their_source(tmp_path):
+    """The UI tells "FACEIT unavailable / not found" apart from "this server is down"."""
+    mock = create_mock()
+    prov = FaceitApiProvider(
+        "test-key",
+        "http://mock/data/v4",
+        tmp_path / "cache",
+        rate=1000,
+        transport=httpx.ASGITransport(app=mock),
+    )
+    app = create_app(make_settings(tmp_path, auth_dev_login=True, faceit_provider="api"), provider=prov)
+    with TestClient(app, base_url="http://localhost:8000") as c:
+        login(c, "scout_me")
+        r = c.get("/api/players/no_such_player_xyz/overview")
+        assert r.status_code == 404
+        assert r.json()["source"] == "faceit" and r.json()["detail"]
+        assert "source" not in c.get("/api/scout/000000000000").json()  # our own 404, not FACEIT's

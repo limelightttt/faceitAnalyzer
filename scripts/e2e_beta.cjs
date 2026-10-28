@@ -15,6 +15,7 @@ const DATA = fs.mkdtempSync(path.join(os.tmpdir(), 'fi-e2e-'))
 const DEMO = path.join(ROOT, 'samples', 'test_demo_mirage.dem')
 const procs = {}
 let page
+let browser
 const ok = (c, m) => {
   if (!c) throw new Error('FAILED: ' + m)
   console.log('ok -', m)
@@ -58,7 +59,7 @@ const startApp = () =>
   startApp()
   await waitUrl(`${MOCK}/admin/upcoming`)
   await waitUrl(`${BASE}/api/health`)
-  const browser = await chromium.launch()
+  browser = await chromium.launch()
   const ctx = await browser.newContext({ viewport: { width: 1366, height: 900 } })
   page = await ctx.newPage()
   const errors = []
@@ -104,7 +105,7 @@ const startApp = () =>
   await page.goto(BASE + '/settings')
   await page.getByRole('button', { name: 'Nuke' }).click()
   await page.getByRole('button', { name: 'Сохранить' }).click()
-  await page.getByText('Сохранено').waitFor()
+  await page.getByText('Сохранено', { exact: true }).waitFor()
 
   // 11-12. restart the app: session, settings, scout and prediction survive
   await stop('app')
@@ -118,13 +119,14 @@ const startApp = () =>
   ok(true, 'after restart: scout report and prediction still available')
   await page.goto(BASE + '/predictions')
   await page.getByText('Все прогнозы').waitFor()
+  await page.locator('tbody tr').first().waitFor({ timeout: 30000 }) // the list loads after the page chrome
   ok((await page.locator('tbody tr').count()) === 1, 'after restart: exactly one prediction (no duplicates)')
 
   // API outage: uncached player -> readable error, cached data still works
   await stop('mock')
   await page.goto(BASE + '/players/enemy_c')
-  await page.getByText('Не удалось загрузить данные').waitFor({ timeout: 90000 })
-  ok(await page.getByText(/FACEIT API/).first().isVisible(), 'FACEIT outage shows a readable error (no fake data)')
+  await page.getByText('FACEIT временно недоступен').waitFor({ timeout: 90000 })
+  ok(await page.getByText(/FACEIT/).first().isVisible(), 'FACEIT outage shows a readable error (no fake data)')
   await page.goto(BASE + '/players/duo_a')
   await page.getByText('Win rate').first().waitFor({ timeout: 60000 })
   ok(true, 'previously loaded player still served from cache during the outage')
@@ -163,6 +165,7 @@ const startApp = () =>
     process.exitCode = 1
   })
   .finally(async () => {
+    await browser?.close().catch(() => {}) // a failed run must not leave node hanging on an open browser
     await stop('app')
     await stop('mock')
   })

@@ -3,7 +3,9 @@ import { Link } from 'react-router-dom'
 import { useHistory, useSession } from '@/entities/session'
 import { ScoutLaunch } from '@/features/scout-launch'
 import { dateTime } from '@/shared/lib/format'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, EmptyState } from '@/shared/ui'
+import type { CSSProperties } from 'react'
+
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, EmptyState, LoadingSkeleton, OfflineState, SkeletonText } from '@/shared/ui'
 
 const STEPS = [
   ['Составы и сила', 'Elo-распределение, форма за 20 матчей, опыт на карте, Elo-ожидание с честной неопределённостью.'],
@@ -31,8 +33,8 @@ export function ScoutPage() {
         </div>
       </section>
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-        {STEPS.map(([t, d]) => (
-          <div key={t} className="rounded-xl border bg-card p-4">
+        {STEPS.map(([t, d], i) => (
+          <div key={t} className="animate-enter rounded-xl border bg-card p-4" style={{ '--i': i } as CSSProperties}>
             <div className="text-sm font-semibold">{t}</div>
             <div className="mt-1 text-xs text-muted-foreground">{d}</div>
           </div>
@@ -44,12 +46,20 @@ export function ScoutPage() {
           <CardDescription>{session?.authenticated ? 'Последние открытые отчёты' : 'Войдите, чтобы сохранять историю разведок и проверять прогнозы'}</CardDescription>
         </CardHeader>
         <CardContent>
-          {scouts.length === 0 ? (
-            <EmptyState title="Разведок пока нет" />
+          {hist.isPending && hist.fetchStatus === 'paused' ? (
+            <OfflineState className="p-6" />
+          ) : hist.isPending && session?.authenticated ? (
+            <LoadingSkeleton label="Загружаем историю разведок">
+              <SkeletonText lines={4} />
+            </LoadingSkeleton>
+          ) : scouts.length === 0 ? (
+            <EmptyState title="Разведок пока нет" className="p-6">
+              Вставьте ссылку на комнату выше — отчёт появится здесь.
+            </EmptyState>
           ) : (
             <div className="divide-y">
               {scouts.map((s) => (
-                <Link key={s.ref + s.at} to={`/scout/${s.ref}`} className="flex items-center justify-between py-2.5 text-sm hover:text-primary">
+                <Link key={s.ref + s.at} to={`/scout/${s.ref}`} className="-mx-2 flex items-center justify-between rounded-md px-2 py-2.5 text-sm transition-colors hover:bg-card-2/60 hover:text-primary">
                   <span>{s.label}</span>
                   <span className="text-xs text-muted-foreground">{dateTime(s.at)}</span>
                 </Link>

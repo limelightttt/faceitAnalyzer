@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 
 import { type Faction, type ScoutReport, useMapGeometry } from '@/entities/scout'
 import { mapName } from '@/shared/lib/format'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, EmptyState, Select, Skeleton } from '@/shared/ui'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, EmptyState, LoadingSkeleton, OfflineState, Select, Skeleton } from '@/shared/ui'
 
 import { AREA_LABEL, LEVEL_LABEL, orderedFactions, teamLabel } from './shared'
 
@@ -48,8 +48,12 @@ export function TacticalMap({ r }: { r: ScoutReport }) {
         </div>
       </CardHeader>
       <CardContent className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_260px]">
-        {geo.isLoading ? (
-          <Skeleton className="aspect-square w-full" />
+        {geo.isPending && geo.fetchStatus === 'paused' ? (
+          <OfflineState className="p-6" />
+        ) : geo.isPending && r.map ? (
+          <LoadingSkeleton label="Загружаем позиции на карте">
+            <Skeleton className="aspect-square w-full rounded-lg" />
+          </LoadingSkeleton>
         ) : observed.length === 0 ? (
           <EmptyState title={`Нет позиционных данных об этой команде на ${mapName(r.map)}`}>
             Загрузите демки прошлых матчей этих игроков в разделе «Демки» — профили позиций накапливаются автоматически и становятся точнее с каждой демкой.

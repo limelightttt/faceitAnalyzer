@@ -1,53 +1,50 @@
 import { createBrowserRouter } from 'react-router-dom'
 
-import { CoachPage } from '@/pages/coach'
-import { DemoDetailPage } from '@/pages/demo-detail'
-import { DemosPage } from '@/pages/demos'
 import { HomePage } from '@/pages/home'
 import { NotFoundPage } from '@/pages/not-found'
-import { PredictionsPage } from '@/pages/predictions'
-import { ScoutPage } from '@/pages/scout'
-import { ScoutReportPage } from '@/pages/scout-report'
-import { SettingsPage } from '@/pages/settings'
-import {
-  MatchDetailPage,
-  PlayerComparePage,
-  PlayerEloPage,
-  PlayerInsightsPage,
-  PlayerLayout,
-  PlayerMatchesPage,
-  PlayerMatchmakingPage,
-  PlayerOverviewPage,
-} from '@/pages/player'
 
 import { AppLayout } from './layout/app-layout'
+import { RouteError } from './layout/route-error'
+import { lazyPage } from './lazy-route'
+
+// Every page except the dashboard is its own chunk (charts included): the first screen loads fast even
+// on a slow connection. While a chunk loads the current page stays visible and the header shows a
+// thin progress bar (RouteProgress) instead of blanking the screen.
+const player = () => import('@/pages/player')
 
 export const routes = [
   {
     element: <AppLayout />,
+    errorElement: <RouteError />, // last resort if the layout itself fails
     children: [
-      { index: true, element: <HomePage /> },
-      { path: 'scout', element: <ScoutPage /> },
-      { path: 'scout/:scoutId', element: <ScoutReportPage /> },
-      { path: 'coach', element: <CoachPage /> },
-      { path: 'predictions', element: <PredictionsPage /> },
-      { path: 'settings', element: <SettingsPage /> },
-      { path: 'demos', element: <DemosPage /> },
-      { path: 'demos/:demoId', element: <DemoDetailPage /> },
       {
-        path: 'players/:nickname',
-        element: <PlayerLayout />,
+        // errors render inside the app chrome (header, navigation stay usable)
+        errorElement: <RouteError />,
         children: [
-          { index: true, element: <PlayerOverviewPage /> },
-          { path: 'matches', element: <PlayerMatchesPage /> },
-          { path: 'matches/:matchId', element: <MatchDetailPage /> },
-          { path: 'compare', element: <PlayerComparePage /> },
-          { path: 'insights', element: <PlayerInsightsPage /> },
-          { path: 'elo', element: <PlayerEloPage /> },
-          { path: 'matchmaking', element: <PlayerMatchmakingPage /> },
+          { index: true, element: <HomePage /> },
+          { path: 'scout', lazy: lazyPage(() => import('@/pages/scout'), (m) => m.ScoutPage) },
+          { path: 'scout/:scoutId', lazy: lazyPage(() => import('@/pages/scout-report'), (m) => m.ScoutReportPage) },
+          { path: 'coach', lazy: lazyPage(() => import('@/pages/coach'), (m) => m.CoachPage) },
+          { path: 'predictions', lazy: lazyPage(() => import('@/pages/predictions'), (m) => m.PredictionsPage) },
+          { path: 'settings', lazy: lazyPage(() => import('@/pages/settings'), (m) => m.SettingsPage) },
+          { path: 'demos', lazy: lazyPage(() => import('@/pages/demos'), (m) => m.DemosPage) },
+          { path: 'demos/:demoId', lazy: lazyPage(() => import('@/pages/demo-detail'), (m) => m.DemoDetailPage) },
+          {
+            path: 'players/:nickname',
+            lazy: lazyPage(player, (m) => m.PlayerLayout),
+            children: [
+              { index: true, lazy: lazyPage(player, (m) => m.PlayerOverviewPage) },
+              { path: 'matches', lazy: lazyPage(player, (m) => m.PlayerMatchesPage) },
+              { path: 'matches/:matchId', lazy: lazyPage(player, (m) => m.MatchDetailPage) },
+              { path: 'compare', lazy: lazyPage(player, (m) => m.PlayerComparePage) },
+              { path: 'insights', lazy: lazyPage(player, (m) => m.PlayerInsightsPage) },
+              { path: 'elo', lazy: lazyPage(player, (m) => m.PlayerEloPage) },
+              { path: 'matchmaking', lazy: lazyPage(player, (m) => m.PlayerMatchmakingPage) },
+            ],
+          },
+          { path: '*', element: <NotFoundPage /> },
         ],
       },
-      { path: '*', element: <NotFoundPage /> },
     ],
   },
 ]

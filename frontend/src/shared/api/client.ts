@@ -1,11 +1,12 @@
-export class ApiError extends Error {
-  constructor(
-    public status: number,
-    message: string,
-  ) {
-    super(message)
-  }
-}
+import { ApiError, type ErrorSource, kindFromStatus } from './errors'
+import { reportServerReachable, reportServerUnreachable } from './network'
+
+export { ApiError } from './errors'
+
+// Generous limits: a first load of 200 FACEIT matches legitimately takes ~2 minutes at the API rate limit.
+// They only stop requests that would otherwise hang forever (e.g. a half-open connection).
+const GET_TIMEOUT_MS = 180_000
+const SEND_TIMEOUT_MS = 120_000
 
 // CSRF synchronizer token from /api/auth/me; sent on unsafe methods. Session itself is an HttpOnly cookie
 // that JavaScript never sees.
@@ -14,19 +15,70 @@ export const setCsrfToken = (t: string | null) => {
   csrfToken = t
 }
 
+function retryAfter(headers: Headers | null): number | undefined {
+  const v = headers?.get('Retry-After')
+  if (!v) return undefined
+  const s = Number(v)
+  if (Number.isFinite(s)) return Math.max(0, Math.round(s))
+  const at = Date.parse(v)
+  return Number.isNaN(at) ? undefined : Math.max(0, Math.round((at - Date.now()) / 1000))
+}
+
+function errorFromBody(status: number, body: unknown, headers: Headers | null, fallback: string): ApiError {
+  const b = (body ?? {}) as { detail?: unknown; source?: string }
+  const detail = typeof b.detail === 'string' ? b.detail : b.detail ? JSON.stringify(b.detail) : fallback
+  const source: ErrorSource = b.source === 'faceit' ? 'faceit' : 'app'
+  // a response without our JSON body on 502/504 is a proxy speaking for a dead app
+  const ours = typeof b.detail === 'string'
+  return new ApiError(status, detail, {
+    source,
+    retryAfterS: retryAfter(headers),
+    kind: !ours && (status === 502 || status === 504) ? 'unreachable' : kindFromStatus(status, source),
+  })
+}
+
 async function parseError(res: Response): Promise<ApiError> {
-  let detail = res.statusText
+  let body: unknown = null
   try {
-    const body = await res.json()
-    detail = typeof body.detail === 'string' ? body.detail : JSON.stringify(body.detail)
+    body = await res.json()
   } catch {
     /* non-JSON error */
   }
-  return new ApiError(res.status, detail)
+  return errorFromBody(res.status, body, res.headers, res.statusText || `HTTP ${res.status}`)
+}
+
+/** fetch with a hard timeout that keeps caller cancellation (React Query unmounts) distinguishable. */
+async function request(path: string, init: RequestInit, timeoutMs: number, signal?: AbortSignal): Promise<Response> {
+  const ctrl = new AbortController()
+  let timedOut = false
+  const timer = setTimeout(() => {
+    timedOut = true
+    ctrl.abort()
+  }, timeoutMs)
+  const onAbort = () => ctrl.abort()
+  if (signal?.aborted) ctrl.abort()
+  signal?.addEventListener('abort', onAbort)
+  try {
+    const res = await fetch(`/api${path}`, { ...init, credentials: 'same-origin', signal: ctrl.signal })
+    const failed = !res.ok && (res.status === 502 || res.status === 504) && !res.headers.get('content-type')?.includes('json')
+    if (failed) reportServerUnreachable()
+    else reportServerReachable()
+    return res
+  } catch (e) {
+    // cancelled by the caller: rethrow as-is so React Query treats it as a cancellation, not an error
+    if (signal?.aborted) throw e
+    if (timedOut) throw new ApiError(0, 'Превышено время ожидания ответа', { kind: 'timeout' })
+    if (typeof navigator !== 'undefined' && !navigator.onLine) throw new ApiError(0, 'Нет подключения к интернету', { kind: 'offline' })
+    reportServerUnreachable()
+    throw new ApiError(0, 'Сервер приложения не отвечает', { kind: 'unreachable' })
+  } finally {
+    clearTimeout(timer)
+    signal?.removeEventListener('abort', onAbort)
+  }
 }
 
 export async function apiGet<T>(path: string, signal?: AbortSignal): Promise<T> {
-  const res = await fetch(`/api${path}`, { signal, credentials: 'same-origin' })
+  const res = await request(path, {}, GET_TIMEOUT_MS, signal)
   if (!res.ok) throw await parseError(res)
   return res.json() as Promise<T>
 }
@@ -45,12 +97,7 @@ async function send<T>(method: string, path: string, body?: unknown, retried = f
   const headers: Record<string, string> = {}
   if (body !== undefined) headers['Content-Type'] = 'application/json'
   if (csrfToken) headers['X-CSRF-Token'] = csrfToken
-  const res = await fetch(`/api${path}`, {
-    method,
-    headers,
-    credentials: 'same-origin',
-    body: body === undefined ? undefined : JSON.stringify(body),
-  })
+  const res = await request(path, { method, headers, body: body === undefined ? undefined : JSON.stringify(body) }, SEND_TIMEOUT_MS)
   if (!res.ok) {
     const err = await parseError(res)
     // the session (and its CSRF token) may have been rotated by a login in another tab: refresh once
@@ -68,8 +115,8 @@ export const apiPost = <T>(path: string, body?: unknown) => send<T>('POST', path
 export const apiPut = <T>(path: string, body?: unknown) => send<T>('PUT', path, body)
 export const apiDelete = (path: string) => send<void>('DELETE', path)
 
-/** Upload with progress (fetch has no upload progress events). */
-export async function apiUpload<T>(path: string, file: File, onProgress: (ratio: number) => void): Promise<T> {
+/** Upload with real progress (fetch has no upload progress events). Abortable through `signal`. */
+export async function apiUpload<T>(path: string, file: File, onProgress: (ratio: number) => void, signal?: AbortSignal): Promise<T> {
   if (!csrfToken) await refreshCsrf()
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest()
@@ -77,6 +124,7 @@ export async function apiUpload<T>(path: string, file: File, onProgress: (ratio:
     if (csrfToken) xhr.setRequestHeader('X-CSRF-Token', csrfToken)
     xhr.upload.onprogress = (e) => e.lengthComputable && onProgress(e.loaded / e.total)
     xhr.onload = () => {
+      reportServerReachable()
       let body: unknown = null
       try {
         body = JSON.parse(xhr.responseText)
@@ -84,9 +132,20 @@ export async function apiUpload<T>(path: string, file: File, onProgress: (ratio:
         /* ignore */
       }
       if (xhr.status >= 200 && xhr.status < 300) resolve(body as T)
-      else reject(new ApiError(xhr.status, (body as { detail?: string })?.detail ?? xhr.statusText))
+      else {
+        const headers = new Headers()
+        const ra = xhr.getResponseHeader('Retry-After')
+        if (ra) headers.set('Retry-After', ra)
+        reject(errorFromBody(xhr.status, body, headers, xhr.statusText || `HTTP ${xhr.status}`))
+      }
     }
-    xhr.onerror = () => reject(new ApiError(0, 'Сеть недоступна'))
+    xhr.onerror = () => {
+      if (!navigator.onLine) return reject(new ApiError(0, 'Нет подключения к интернету', { kind: 'offline' }))
+      reportServerUnreachable()
+      reject(new ApiError(0, 'Соединение с сервером прервалось во время загрузки', { kind: 'unreachable' }))
+    }
+    xhr.onabort = () => reject(new DOMException('Загрузка отменена', 'AbortError'))
+    signal?.addEventListener('abort', () => xhr.abort(), { once: true })
     const form = new FormData()
     form.append('file', file)
     xhr.send(form)
