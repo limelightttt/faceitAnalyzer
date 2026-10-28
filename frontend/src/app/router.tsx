@@ -24,6 +24,7 @@ export const routes = [
           { index: true, element: <HomePage /> },
           { path: 'scout', lazy: lazyPage(() => import('@/pages/scout'), (m) => m.ScoutPage) },
           { path: 'scout/:scoutId', lazy: lazyPage(() => import('@/pages/scout-report'), (m) => m.ScoutReportPage) },
+          { path: 'stack', lazy: lazyPage(() => import('@/pages/stack'), (m) => m.StackPage) },
           { path: 'coach', lazy: lazyPage(() => import('@/pages/coach'), (m) => m.CoachPage) },
           { path: 'predictions', lazy: lazyPage(() => import('@/pages/predictions'), (m) => m.PredictionsPage) },
           { path: 'settings', lazy: lazyPage(() => import('@/pages/settings'), (m) => m.SettingsPage) },

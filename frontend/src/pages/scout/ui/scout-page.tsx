@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 
 import { useHistory, useSession } from '@/entities/session'
-import { ScoutLaunch } from '@/features/scout-launch'
+import { OmniSearch } from '@/features/omni-search'
 import { dateTime } from '@/shared/lib/format'
 import type { CSSProperties } from 'react'
 
@@ -29,7 +29,8 @@ export function ScoutPage() {
           <p className="text-sm text-muted-foreground">
             Вставьте ссылку на комнату матча FACEIT — приложение само соберёт данные по всем десяти игрокам и подготовит предматчевый брифинг. Никаких ручных поисков профилей.
           </p>
-          <ScoutLaunch size="lg" />
+          <OmniSearch size="lg" withDetect />
+          <p className="text-xs text-subtle-foreground">Быстрее: скопируйте ссылку на комнату и нажмите Ctrl+V в любом месте приложения (или Ctrl+K).</p>
         </div>
       </section>
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">

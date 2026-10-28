@@ -1,7 +1,7 @@
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 
 import { useOverview } from '@/entities/player'
-import { PlayerSearch } from '@/features/player-search'
+import { OmniSearch } from '@/features/omni-search'
 import { cn } from '@/shared/lib/cn'
 import { useDelayed } from '@/shared/lib/use-delayed'
 import { AsyncView, LoadingSkeleton, Notice, Progress } from '@/shared/ui'
@@ -68,7 +68,7 @@ export function PlayerLayout() {
       <AsyncView
         query={overview}
         notFound={`Игрок «${nickname}» не найден на FACEIT`}
-        notFoundAction={<PlayerSearch className="w-full max-w-sm" />}
+        notFoundAction={<OmniSearch className="w-full max-w-md text-left" />}
         skeleton={
           <div className="space-y-4">
             <FirstLoadNote nickname={nickname} limit={limit} />

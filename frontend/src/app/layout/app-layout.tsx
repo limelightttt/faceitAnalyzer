@@ -1,12 +1,13 @@
-import { FileVideo, GraduationCap, Home, LineChart, Radar, Settings } from 'lucide-react'
+import { FileVideo, GraduationCap, Home, Layers, LineChart, Radar, Settings, UserRound } from 'lucide-react'
 import { useCallback, useEffect, useRef } from 'react'
 import { Link, NavLink, Outlet, ScrollRestoration, useLocation, useNavigate, useNavigation } from 'react-router-dom'
 
 import { useSession, useSessionExpired } from '@/entities/session'
 import { useHealth } from '@/entities/system'
 import { finishLogin, usePendingLogin } from '@/features/auth'
+import { CommandPalette, type PaletteLink } from '@/features/command-palette'
 import { JobWatcher } from '@/features/job-tracking'
-import { PlayerSearch } from '@/features/player-search'
+import { PasteToScout } from '@/features/omni-search'
 import { ThemeToggle } from '@/features/theme-toggle'
 import { type AuthPhase, AuthScreen } from '@/pages/login'
 import { cn } from '@/shared/lib/cn'
@@ -14,13 +15,20 @@ import { useDelayed } from '@/shared/lib/use-delayed'
 import { BrandMark, Button, ErrorState, Spinner } from '@/shared/ui'
 import { ConnectionBanner } from '@/widgets/system-status'
 
-const NAV = [
-  { to: '/', label: 'Главная', icon: Home, end: true },
-  { to: '/scout', label: 'Разведка', icon: Radar },
-  { to: '/coach', label: 'Коуч', icon: GraduationCap },
-  { to: '/predictions', label: 'Прогнозы', icon: LineChart },
-  { to: '/demos', label: 'Демки', icon: FileVideo },
-]
+/** Main navigation (also offered by the Ctrl+K palette). "Профиль" appears once the FACEIT profile is known. */
+function useNavLinks(): (PaletteLink & { end?: boolean })[] {
+  const { data } = useSession()
+  const me = data?.game_profile?.nickname
+  return [
+    { to: '/', label: 'Главная', icon: Home, end: true },
+    ...(me ? [{ to: `/players/${encodeURIComponent(me)}`, label: 'Профиль', icon: UserRound }] : []),
+    { to: '/scout', label: 'Разведка', icon: Radar },
+    { to: '/stack', label: 'Стак', icon: Layers },
+    { to: '/coach', label: 'Коуч', icon: GraduationCap },
+    { to: '/predictions', label: 'Прогнозы', icon: LineChart },
+    { to: '/demos', label: 'Демки', icon: FileVideo },
+  ]
+}
 
 function Account() {
   const { data } = useSession()
@@ -135,13 +143,19 @@ function Gate() {
   return (
     <>
       <RouteTransition />
-      {session.data?.authenticated && <JobWatcher />}
+      {session.data?.authenticated && (
+        <>
+          <JobWatcher />
+          <PasteToScout />
+        </>
+      )}
     </>
   )
 }
 
 export function AppLayout() {
-  const { pathname } = useLocation()
+  const links = useNavLinks()
+  const { data: session } = useSession()
   return (
     <div className="flex min-h-dvh flex-col">
       <a href="#main" className="sr-only z-50 rounded-md bg-card px-3 py-2 focus:not-sr-only focus:fixed focus:top-2 focus:left-2">
@@ -153,7 +167,7 @@ export function AppLayout() {
             <BrandMark className="[&>span:last-child]:hidden xl:[&>span:last-child]:flex" />
           </Link>
           <nav className="flex min-w-0 items-center gap-0.5 overflow-x-auto" aria-label="Основная навигация">
-            {NAV.map((n) => (
+            {links.map((n) => (
               <NavLink
                 key={n.to}
                 to={n.to}
@@ -167,12 +181,12 @@ export function AppLayout() {
                 }
               >
                 <n.icon className="size-4" />
-                <span className="hidden md:inline">{n.label}</span>
+                <span className="hidden lg:inline">{n.label}</span>
               </NavLink>
             ))}
           </nav>
           <div className="ml-auto flex min-w-0 items-center gap-1">
-            {pathname !== '/' && <PlayerSearch className="hidden w-60 lg:flex" />}
+            {session?.authenticated && <CommandPalette links={[...links, { to: '/settings', label: 'Настройки', icon: Settings }]} />}
             <Account />
             <ThemeToggle />
           </div>

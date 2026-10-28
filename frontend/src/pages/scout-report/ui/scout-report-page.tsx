@@ -1,12 +1,19 @@
 import { AlertTriangle, ArrowLeft, RotateCcw } from 'lucide-react'
-import type { CSSProperties } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { type CSSProperties, useCallback } from 'react'
+import { Link, useParams } from 'react-router-dom'
 
-import { type ScoutJob, useScoutJob, useStartScout } from '@/entities/scout'
-import { trackJob } from '@/features/job-tracking'
+import { type ScoutJob, useScoutJob } from '@/entities/scout'
+import { useLaunchScout } from '@/features/omni-search'
 import { isConnectivityError } from '@/shared/api/errors'
+import { mapName } from '@/shared/lib/format'
+import { notify } from '@/shared/lib/notify'
 import { Button, ErrorState, JobProgress, type JobStep, LoadingSkeleton, Notice, Skeleton } from '@/shared/ui'
-import { Briefing, DuoNetwork, MapPool, PostMatch, PredictionPanel, ScoutHeader, Stability, TacticalMap, TeamBalance, ThreatCards } from '@/widgets/scout'
+import { Briefing, DuoNetwork, PostMatch, PredictionPanel, ScoutHeader, ScoutSummary, Stability, TacticalMap, TeamBalance, ThreatCards } from '@/widgets/scout'
+
+import { useMapPickWatch } from '../model/use-map-pick-watch'
+import { MapsSection } from './maps-section'
+import { ReportSection } from './report-section'
+import { type SectionLink, SectionNav } from './section-nav'
 
 const PLAYERS_START = 0.1 // server milestones (backend scout/service.py)
 const BRIEFING_START = 0.9
@@ -26,21 +33,29 @@ function scoutSteps(job: ScoutJob): JobStep[] {
   ]
 }
 
+const SECTIONS: SectionLink[] = [
+  { id: 'summary', label: 'Сводка' },
+  { id: 'briefing', label: 'Брифинг' },
+  { id: 'threats', label: 'Угрозы' },
+  { id: 'duos', label: 'Связки' },
+  { id: 'maps', label: 'Карты' },
+  { id: 'tactical', label: 'Тактика' },
+  { id: 'stability', label: 'Стабильность' },
+]
+
 export function ScoutReportPage() {
   const { scoutId = '' } = useParams()
   const job = useScoutJob(scoutId)
-  const restart = useStartScout()
-  const navigate = useNavigate()
-  const rerun = (matchId: string) =>
-    restart.mutate(
-      { url: matchId, refresh: true },
-      {
-        onSuccess: (r) => {
-          trackJob({ kind: 'scout', id: r.id, label: `Матч ${r.match_id.slice(0, 13)}…` })
-          navigate(`/scout/${r.id}`)
-        },
-      },
-    )
+  const { launch, start } = useLaunchScout()
+  const rerun = (matchId: string) => launch(matchId, { refresh: true })
+  const onMapPicked = useCallback(
+    (map: string) => {
+      notify.info(`Карта выбрана: ${mapName(map)}`, { description: 'Обновляем отчёт с учётом карты…' })
+      if (job.data) launch(job.data.match_id, { refresh: true })
+    },
+    [job.data, launch],
+  )
+  const waitingForMap = useMapPickWatch(job.data, onMapPicked)
 
   const d = job.data
   if (!d) {
@@ -85,7 +100,7 @@ export function ScoutReportPage() {
       <ErrorState
         error={d.error ?? 'Ошибка разведки'}
         action={
-          <Button size="sm" variant="secondary" onClick={() => rerun(d.match_id)} loading={restart.isPending}>
+          <Button size="sm" variant="secondary" onClick={() => rerun(d.match_id)} loading={start.isPending}>
             <RotateCcw /> Запустить заново
           </Button>
         }
@@ -93,30 +108,54 @@ export function ScoutReportPage() {
     )
   const r = d.report!
   const missing = Object.values(r.teams).flatMap((t) => t.summary.players_missing_data)
-  // the report renders section by section with a short stagger: the eye follows the order of the briefing
+  const calm = Object.values(r.teams).every((t) => t.instability.signals.length === 0)
   const sections = [
-    <PostMatch key="post" r={r} />,
-    <div key="main" className="grid grid-cols-1 gap-4 xl:grid-cols-[1.25fr_1fr]">
-      <Briefing job={d} />
+    <ReportSection key="summary" id="summary" title="Сводка">
       <div className="space-y-4">
-        <TeamBalance r={r} />
-        <PredictionPanel job={d} />
+        <ScoutSummary r={r} waitingForMap={waitingForMap} />
+        <PostMatch r={r} />
       </div>
-    </div>,
-    <ThreatCards key="threats" job={d} />,
-    <DuoNetwork key="duos" r={r} />,
-    <TacticalMap key="tactical" r={r} />,
-    <MapPool key="maps" r={r} />,
-    <Stability key="stability" r={r} />,
+    </ReportSection>,
+    <ReportSection key="briefing" id="briefing" title="Брифинг">
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1.25fr_1fr]">
+        <Briefing job={d} />
+        <div className="space-y-4">
+          <TeamBalance r={r} />
+          <PredictionPanel job={d} />
+        </div>
+      </div>
+    </ReportSection>,
+    <ReportSection key="threats" id="threats" title="Угрозы">
+      <ThreatCards job={d} />
+    </ReportSection>,
+    <ReportSection key="duos" id="duos" title="Связки">
+      <DuoNetwork r={r} />
+    </ReportSection>,
+    <ReportSection key="maps" id="maps" title="Карты">
+      <MapsSection r={r} />
+    </ReportSection>,
+    <ReportSection
+      key="tactical"
+      id="tactical"
+      title="Тактика"
+      folded={r.tactical_coverage.players_with_demos === 0 ? 'нет разобранных демок этих игроков — позиции появятся, когда вы загрузите их демки' : undefined}
+    >
+      <TacticalMap r={r} />
+    </ReportSection>,
+    <ReportSection key="stability" id="stability" title="Стабильность" folded={calm ? 'признаков нестабильности составов в статистике нет' : undefined}>
+      <Stability r={r} />
+    </ReportSection>,
   ]
   return (
     <div className="space-y-4">
-      <ScoutHeader job={d} onRefresh={() => rerun(r.match_id)} refreshing={restart.isPending} />
+      <ScoutHeader job={d} onRefresh={() => rerun(r.match_id)} refreshing={start.isPending} />
       {missing.length > 0 && (
         <Notice tone="warning" icon={AlertTriangle}>
           Неполные данные FACEIT по игрокам: {missing.join(', ')}. Выводы по ним ограничены.
         </Notice>
       )}
+      <SectionNav sections={SECTIONS} />
+      {/* sections enter with a short stagger: the eye follows the order of the report */}
       {sections.map((s, i) => (
         <div key={s.key} className="animate-enter" style={{ '--i': i } as CSSProperties}>
           {s}

@@ -2,7 +2,7 @@ import { useMutation, useQuery } from '@tanstack/react-query'
 
 import { apiGet, apiPost } from '@/shared/api/client'
 
-import type { ScoutJob } from '../model/types'
+import type { ScoutJob, ScoutReport } from '../model/types'
 
 export const useScoutJob = (id: string) =>
   useQuery({
@@ -13,6 +13,18 @@ export const useScoutJob = (id: string) =>
   })
 
 /** `inline`: the caller renders the error next to its form instead of a toast. */
+/** The scouted match right now (FACEIT caches live matches for 20 s): an open report watches for the
+ * map pick while the veto runs. Quiet: failures only pause the watch. */
+export const useScoutLive = (id: string, enabled: boolean) =>
+  useQuery({
+    queryKey: ['scout-live', id],
+    queryFn: ({ signal }) => apiGet<{ status: string; phase: ScoutReport['phase']; map: string | null }>(`/scout/${id}/live`, signal),
+    enabled,
+    refetchInterval: 15_000,
+    retry: false,
+    meta: { silent: true },
+  })
+
 export const useStartScout = ({ inline = false } = {}) =>
   useMutation({
     mutationFn: (body: { url: string; refresh?: boolean }) => apiPost<{ id: string; match_id: string; reused: boolean }>('/scout', body),
