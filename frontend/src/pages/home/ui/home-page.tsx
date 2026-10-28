@@ -10,7 +10,7 @@ import { LoginButtons } from '@/features/auth'
 import { PlayerSearch } from '@/features/player-search'
 import { ScoutLaunch } from '@/features/scout-launch'
 import { dateTime, fmt, pct } from '@/shared/lib/format'
-import { AsyncView, Card, CardContent, CardDescription, CardHeader, CardTitle, EmptyState, LoadingSkeleton, Progress, Skeleton, SkeletonText, SkeletonTiles, StatTile } from '@/shared/ui'
+import { AsyncView, Card, CardContent, CardDescription, CardHeader, CardTitle, EmptyState, LoadingSkeleton, OfflineState, Progress, Skeleton, SkeletonText, SkeletonTiles, StatTile } from '@/shared/ui'
 import { DemoList } from '@/widgets/demo-list'
 import { PlayerKpis } from '@/widgets/player-kpis'
 import { ServiceNotes } from '@/widgets/system-status'
@@ -40,7 +40,7 @@ function Dashboard({ nickname }: { nickname: string }) {
               Elo {ov.data.profile.elo ?? '—'} · уровень {ov.data.profile.skill_level ?? '—'} · {ov.data.quality.matches_loaded} матчей в выборке
             </div>
           ) : (
-            ov.isPending && <Skeleton className="mt-1.5 h-3 w-56" />
+            ov.isPending && ov.fetchStatus === 'fetching' && <Skeleton className="mt-1.5 h-3 w-56" />
           )}
         </div>
         <div className="w-full space-y-2 md:max-w-xl">
@@ -59,7 +59,9 @@ function Dashboard({ nickname }: { nickname: string }) {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            {coach.isPending ? (
+            {coach.isPending && coach.fetchStatus === 'paused' ? (
+              <OfflineState className="p-5" />
+            ) : coach.isPending ? (
               <LoadingSkeleton label="Загружаем цели">
                 <SkeletonText lines={4} />
               </LoadingSkeleton>
@@ -92,7 +94,9 @@ function Dashboard({ nickname }: { nickname: string }) {
             <CardDescription>{pm.data ? `Проверено ${pm.data.scored} · нужно 30+ для выводов` : 'Нужно 30+ проверенных прогнозов для выводов'}</CardDescription>
           </CardHeader>
           <CardContent className="grid grid-cols-2 gap-2">
-            {pm.isPending ? (
+            {pm.isPending && pm.fetchStatus === 'paused' ? (
+              <OfflineState className="col-span-2 p-5" />
+            ) : pm.isPending ? (
               <SkeletonTiles count={2} className="col-span-2 grid-cols-2 md:grid-cols-2 [&>*]:p-3" />
             ) : (
               <>
@@ -110,7 +114,9 @@ function Dashboard({ nickname }: { nickname: string }) {
             <CardTitle>История анализов</CardTitle>
           </CardHeader>
           <CardContent>
-            {hist.isPending ? (
+            {hist.isPending && hist.fetchStatus === 'paused' ? (
+              <OfflineState className="p-5" />
+            ) : hist.isPending ? (
               <LoadingSkeleton label="Загружаем историю">
                 <SkeletonText lines={5} />
               </LoadingSkeleton>

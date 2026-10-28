@@ -44,7 +44,7 @@ export function PlayerOverviewPage() {
           <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1.6fr_1fr]">
             <MatchesTable matches={d.matches} nickname={nickname} search={search} limit={8} title="Последние матчи" />
             {/* secondary panel: loads on its own and never blocks the overview */}
-            {ins.data ? <InsightsPanel data={ins.data} compact /> : ins.isPending ? <TwoCardsSkeleton /> : null}
+            {ins.data ? <InsightsPanel data={ins.data} compact /> : ins.isPending && ins.fetchStatus === 'fetching' ? <TwoCardsSkeleton /> : null}
           </div>
         </div>
       )}

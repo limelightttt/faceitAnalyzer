@@ -89,7 +89,10 @@ export function describeError(error: unknown, subject?: { notFound?: string }): 
     case 'forbidden':
       return { title: 'Нет доступа', message: detail || 'У этого аккаунта нет доступа к разделу.', retryable: false }
     case 'not_found':
-      return { title: subject?.notFound ?? 'Не найдено', message: detail || 'Проверьте ссылку или ник.', retryable: false }
+      // the screen names what is missing; the server's sentence would only repeat it
+      return subject?.notFound
+        ? { title: subject.notFound, message: 'Проверьте ссылку или написание — регистр букв не важен.', retryable: false }
+        : { title: 'Не найдено', message: detail || 'Проверьте ссылку или ник.', retryable: false }
     case 'conflict':
       return { title: 'Действие сейчас невозможно', message: detail, retryable: false }
     case 'invalid':

@@ -1,5 +1,5 @@
 import { FileVideo, GraduationCap, Home, LineChart, Radar, Settings } from 'lucide-react'
-import { useCallback, useEffect } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import { Link, NavLink, Outlet, ScrollRestoration, useLocation, useNavigate, useNavigation } from 'react-router-dom'
 
 import { useSession, useSessionExpired } from '@/entities/session'
@@ -73,6 +73,15 @@ function RouteProgress() {
 function RouteTransition() {
   const { pathname } = useLocation()
   const key = pathname.startsWith('/players/') ? pathname.split('/').slice(0, 3).join('/') : pathname
+  // after an in-app navigation, keyboard and screen-reader focus starts at the new page, not the old link
+  const first = useRef(true)
+  useEffect(() => {
+    if (first.current) {
+      first.current = false
+      return
+    }
+    document.getElementById('main')?.focus({ preventScroll: true })
+  }, [key])
   return (
     <div key={key} className="animate-enter">
       <Outlet />
@@ -171,7 +180,7 @@ export function AppLayout() {
         <RouteProgress />
       </header>
       <ConnectionBanner />
-      <main id="main" className="mx-auto w-full max-w-7xl flex-1 px-4 py-6">
+      <main id="main" tabIndex={-1} className="mx-auto w-full max-w-7xl flex-1 px-4 py-6 focus:outline-none">
         <Gate />
       </main>
       <footer className="mx-auto w-full max-w-7xl px-4 pb-8 text-xs text-subtle-foreground">

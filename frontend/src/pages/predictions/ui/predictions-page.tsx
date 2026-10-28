@@ -6,7 +6,7 @@ import { type PredictionMetrics, usePredictionMetrics, usePredictions, useResolv
 import { useSession } from '@/entities/session'
 import { LoginButtons } from '@/features/auth'
 import { dateTime, pct } from '@/shared/lib/format'
-import { AsyncView, axisProps, Button, Card, CardContent, CardDescription, CardHeader, CardTitle, ChartTooltipBox, EmptyState, gridProps, Legend, LoadingSkeleton, Notice, SkeletonCard, SkeletonChart, SkeletonTable, SkeletonTiles, StatTile, Table, TBody, TD, TH, THead, TR } from '@/shared/ui'
+import { AsyncView, axisProps, Button, Card, CardContent, CardDescription, CardHeader, CardTitle, ChartTooltipBox, EmptyState, gridProps, Legend, LoadingSkeleton, Notice, OfflineState, SkeletonCard, SkeletonChart, SkeletonTable, SkeletonTiles, StatTile, Table, TBody, TD, TH, THead, TR } from '@/shared/ui'
 import { notify } from '@/shared/lib/notify'
 
 export function PredictionsPage() {
@@ -171,7 +171,11 @@ function PredictionList({ list }: { list: ReturnType<typeof usePredictions> }) {
           <CardTitle>Все прогнозы</CardTitle>
         </CardHeader>
         <CardContent className="px-0 pb-2">
-          {list.isPending ? (
+          {list.isPending && list.fetchStatus === 'paused' ? (
+            <div className="px-5 pb-3">
+              <OfflineState />
+            </div>
+          ) : list.isPending ? (
             <LoadingSkeleton label="Загружаем прогнозы">
               <SkeletonTable rows={5} cols={6} />
             </LoadingSkeleton>

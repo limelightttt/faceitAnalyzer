@@ -41,8 +41,10 @@ export function JobProgress({
         <div className="min-w-0">
           <h2 className="text-sm font-semibold">{title}</h2>
           {/* announced to screen readers when the step changes */}
-          <p className="text-xs text-muted-foreground" aria-live="polite">
-            {active?.label ?? ' '}
+          <p className="text-xs text-muted-foreground tabular">{active ? `Шаг ${steps.indexOf(active) + 1} из ${steps.length}` : ' '}</p>
+          {/* announced to screen readers when the step changes */}
+          <p className="sr-only" aria-live="polite">
+            {active?.label}
           </p>
         </div>
       </div>

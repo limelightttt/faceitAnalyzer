@@ -5,7 +5,7 @@ import { ScoutLaunch } from '@/features/scout-launch'
 import { dateTime } from '@/shared/lib/format'
 import type { CSSProperties } from 'react'
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, EmptyState, LoadingSkeleton, SkeletonText } from '@/shared/ui'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, EmptyState, LoadingSkeleton, OfflineState, SkeletonText } from '@/shared/ui'
 
 const STEPS = [
   ['Составы и сила', 'Elo-распределение, форма за 20 матчей, опыт на карте, Elo-ожидание с честной неопределённостью.'],
@@ -46,7 +46,9 @@ export function ScoutPage() {
           <CardDescription>{session?.authenticated ? 'Последние открытые отчёты' : 'Войдите, чтобы сохранять историю разведок и проверять прогнозы'}</CardDescription>
         </CardHeader>
         <CardContent>
-          {hist.isPending && session?.authenticated ? (
+          {hist.isPending && hist.fetchStatus === 'paused' ? (
+            <OfflineState className="p-6" />
+          ) : hist.isPending && session?.authenticated ? (
             <LoadingSkeleton label="Загружаем историю разведок">
               <SkeletonText lines={4} />
             </LoadingSkeleton>

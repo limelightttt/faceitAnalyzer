@@ -22,12 +22,15 @@ export function AsyncView<T>({
   query,
   skeleton,
   notFound,
+  action,
   children,
   className,
 }: {
   query: QueryState<T>
   skeleton: ReactNode
   notFound?: string
+  /** extra action next to "Повторить" in the error state (e.g. a search box for "not found") */
+  action?: ReactNode
   children: (data: T) => ReactNode
   className?: string
 }) {
@@ -35,6 +38,6 @@ export function AsyncView<T>({
   if (query.data !== undefined)
     return <div className={cn(!cachedAtMount.current && 'animate-fade-in', className)}>{children(query.data)}</div>
   if (query.fetchStatus === 'paused') return <OfflineState className={className} />
-  if (query.error) return <ErrorState error={query.error} notFound={notFound} onRetry={() => query.refetch()} className={className} />
+  if (query.error) return <ErrorState error={query.error} notFound={notFound} onRetry={() => query.refetch()} action={action} className={className} />
   return <>{skeleton}</>
 }
