@@ -68,7 +68,7 @@ export function PlayerLayout() {
       <AsyncView
         query={overview}
         notFound={`Игрок «${nickname}» не найден на FACEIT`}
-        action={<PlayerSearch className="w-full max-w-sm" />}
+        notFoundAction={<PlayerSearch className="w-full max-w-sm" />}
         skeleton={
           <div className="space-y-4">
             <FirstLoadNote nickname={nickname} limit={limit} />
