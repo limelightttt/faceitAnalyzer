@@ -7,7 +7,7 @@ from ..auth.security import client_ip
 from ..db import Feedback, GameProfile, Prediction, PredictionOutcome, ScoutReport, utcnow
 from ..predictions import metrics, resolve_pending, serialize
 from ..providers.base import ProviderError
-from ..scout.service import start_job
+from ..scout.service import job_stage, start_job
 from ..scout.url import parse_match_ref
 from ..state import AppState, Auth, get_db, get_state, require_access, require_user
 from .me import log_analysis
@@ -71,6 +71,7 @@ def get_scout(sid: str, db: Session = Depends(get_db), auth: Auth = Depends(requ
         "match_id": row.match_id,
         "status": row.status,
         "progress": row.progress,
+        "stage": job_stage(row.status, row.progress or 0),
         "error": row.error,
         "created_at": row.created_at.isoformat() + "Z",
         "report": row.report,
