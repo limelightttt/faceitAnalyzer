@@ -14,9 +14,13 @@ export default defineConfig({
   build: {
     rollupOptions: {
       output: {
-        manualChunks: {
-          react: ['react', 'react-dom', 'react-router-dom', '@tanstack/react-query'],
-          charts: ['recharts'],
+        // charts only get recharts' own dependencies; shared helpers (clsx…) stay in the entry so pages
+        // without charts never download the charting chunk
+        manualChunks(id) {
+          // helpers shared with recharts must be assigned explicitly, or Rollup pulls them into the charts chunk
+          if (id.includes('commonjsHelpers') || /node_modules\/(clsx|react-is)\//.test(id)) return 'react'
+          if (/node_modules\/(react|react-dom|scheduler|react-router|react-router-dom|@remix-run|@tanstack)\//.test(id)) return 'react'
+          if (/node_modules\/(recharts|recharts-scale|d3-[a-z-]+|victory-vendor|internmap|decimal\.js-light|lodash|eventemitter3|react-smooth|fast-equals|tiny-invariant)\//.test(id)) return 'charts'
         },
       },
     },

@@ -1,50 +1,38 @@
 import { createBrowserRouter } from 'react-router-dom'
 
-import { CoachPage } from '@/pages/coach'
-import { DemoDetailPage } from '@/pages/demo-detail'
-import { DemosPage } from '@/pages/demos'
 import { HomePage } from '@/pages/home'
 import { NotFoundPage } from '@/pages/not-found'
-import { PredictionsPage } from '@/pages/predictions'
-import { ScoutPage } from '@/pages/scout'
-import { ScoutReportPage } from '@/pages/scout-report'
-import { SettingsPage } from '@/pages/settings'
-import {
-  MatchDetailPage,
-  PlayerComparePage,
-  PlayerEloPage,
-  PlayerInsightsPage,
-  PlayerLayout,
-  PlayerMatchesPage,
-  PlayerMatchmakingPage,
-  PlayerOverviewPage,
-} from '@/pages/player'
 
 import { AppLayout } from './layout/app-layout'
+
+// Every page except the dashboard is its own chunk (charts included): the first screen loads fast even
+// on a slow connection. While a chunk loads the current page stays visible and the header shows a
+// thin progress bar (RouteProgress) instead of blanking the screen.
+const player = () => import('@/pages/player')
 
 export const routes = [
   {
     element: <AppLayout />,
     children: [
       { index: true, element: <HomePage /> },
-      { path: 'scout', element: <ScoutPage /> },
-      { path: 'scout/:scoutId', element: <ScoutReportPage /> },
-      { path: 'coach', element: <CoachPage /> },
-      { path: 'predictions', element: <PredictionsPage /> },
-      { path: 'settings', element: <SettingsPage /> },
-      { path: 'demos', element: <DemosPage /> },
-      { path: 'demos/:demoId', element: <DemoDetailPage /> },
+      { path: 'scout', lazy: () => import('@/pages/scout').then((m) => ({ Component: m.ScoutPage })) },
+      { path: 'scout/:scoutId', lazy: () => import('@/pages/scout-report').then((m) => ({ Component: m.ScoutReportPage })) },
+      { path: 'coach', lazy: () => import('@/pages/coach').then((m) => ({ Component: m.CoachPage })) },
+      { path: 'predictions', lazy: () => import('@/pages/predictions').then((m) => ({ Component: m.PredictionsPage })) },
+      { path: 'settings', lazy: () => import('@/pages/settings').then((m) => ({ Component: m.SettingsPage })) },
+      { path: 'demos', lazy: () => import('@/pages/demos').then((m) => ({ Component: m.DemosPage })) },
+      { path: 'demos/:demoId', lazy: () => import('@/pages/demo-detail').then((m) => ({ Component: m.DemoDetailPage })) },
       {
         path: 'players/:nickname',
-        element: <PlayerLayout />,
+        lazy: () => player().then((m) => ({ Component: m.PlayerLayout })),
         children: [
-          { index: true, element: <PlayerOverviewPage /> },
-          { path: 'matches', element: <PlayerMatchesPage /> },
-          { path: 'matches/:matchId', element: <MatchDetailPage /> },
-          { path: 'compare', element: <PlayerComparePage /> },
-          { path: 'insights', element: <PlayerInsightsPage /> },
-          { path: 'elo', element: <PlayerEloPage /> },
-          { path: 'matchmaking', element: <PlayerMatchmakingPage /> },
+          { index: true, lazy: () => player().then((m) => ({ Component: m.PlayerOverviewPage })) },
+          { path: 'matches', lazy: () => player().then((m) => ({ Component: m.PlayerMatchesPage })) },
+          { path: 'matches/:matchId', lazy: () => player().then((m) => ({ Component: m.MatchDetailPage })) },
+          { path: 'compare', lazy: () => player().then((m) => ({ Component: m.PlayerComparePage })) },
+          { path: 'insights', lazy: () => player().then((m) => ({ Component: m.PlayerInsightsPage })) },
+          { path: 'elo', lazy: () => player().then((m) => ({ Component: m.PlayerEloPage })) },
+          { path: 'matchmaking', lazy: () => player().then((m) => ({ Component: m.PlayerMatchmakingPage })) },
         ],
       },
       { path: '*', element: <NotFoundPage /> },
