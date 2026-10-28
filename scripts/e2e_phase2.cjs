@@ -66,7 +66,7 @@ const ok = (c, m) => {
   await page.goto(BASE + '/settings')
   await page.getByRole('button', { name: 'Mirage' }).click()
   await page.getByRole('button', { name: 'Сохранить' }).click()
-  await page.getByText('Сохранено').waitFor()
+  await page.getByText('Сохранено', { exact: true }).waitFor()
   await page.reload()
   await page.getByRole('button', { name: 'Mirage' }).waitFor()
   ok((await page.getByRole('button', { name: 'Mirage' }).getAttribute('aria-pressed')) === 'true', 'user settings persist')

@@ -104,7 +104,7 @@ const startApp = () =>
   await page.goto(BASE + '/settings')
   await page.getByRole('button', { name: 'Nuke' }).click()
   await page.getByRole('button', { name: 'Сохранить' }).click()
-  await page.getByText('Сохранено').waitFor()
+  await page.getByText('Сохранено', { exact: true }).waitFor()
 
   // 11-12. restart the app: session, settings, scout and prediction survive
   await stop('app')
@@ -123,8 +123,8 @@ const startApp = () =>
   // API outage: uncached player -> readable error, cached data still works
   await stop('mock')
   await page.goto(BASE + '/players/enemy_c')
-  await page.getByText('Не удалось загрузить данные').waitFor({ timeout: 90000 })
-  ok(await page.getByText(/FACEIT API/).first().isVisible(), 'FACEIT outage shows a readable error (no fake data)')
+  await page.getByText('FACEIT временно недоступен').waitFor({ timeout: 90000 })
+  ok(await page.getByText(/FACEIT/).first().isVisible(), 'FACEIT outage shows a readable error (no fake data)')
   await page.goto(BASE + '/players/duo_a')
   await page.getByText('Win rate').first().waitFor({ timeout: 60000 })
   ok(true, 'previously loaded player still served from cache during the outage')

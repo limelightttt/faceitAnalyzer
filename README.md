@@ -50,14 +50,16 @@ make live-check NICK=ваш_ник ROOM=https://www.faceit.com/ru/cs2/room/1-…
 ## Проверки
 
 ```bash
-make test        # backend pytest (75 тестов) + frontend vitest (4)
+make test        # backend pytest (77 тестов) + frontend vitest (29)
 make lint        # ruff + tsc + eslint
 make mock-stack  # в другом терминале: стек против MOCK FACEIT API (тестовый мир, не реальные данные)
 make e2e         # браузерный E2E Phase II (Playwright): вход, разведка, прогноз→результат, настройки, коуч, демки
 make e2e-beta    # самодостаточный E2E беты: экран входа, 401, разведка, перезапуск, сбой FACEIT, повтор демки, выход, телефон
+make e2e-ux      # E2E интерфейса: фазы входа, медленные/сломанные/отменённые запросы, офлайн, Slow 3G, телефон
 ```
 
 ## Документация
+* [docs/UX.md](docs/UX.md) — язык движения, загрузка, ошибки, уведомления, поведение при плохой сети.
 * [docs/WINDOWS.md](docs/WINDOWS.md) — запуск на Windows 11, обновление, данные, Tailscale.
 * [docs/PRIVATE_BETA_REPORT.md](docs/PRIVATE_BETA_REPORT.md) — стабилизация к закрытой бете: найденные дефекты, проверки, ограничения.
 * [docs/PHASE2_REPORT.md](docs/PHASE2_REPORT.md) — что сделано и проверено во втором этапе, ограничения.
