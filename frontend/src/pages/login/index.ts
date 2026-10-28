@@ -1,1 +1,1 @@
-export { LoginPage } from './ui/login-page'
+export { AuthScreen, type AuthPhase } from './ui/login-page'
