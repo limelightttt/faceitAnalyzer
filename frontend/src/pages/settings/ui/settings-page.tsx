@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { type UserSettings, useSaveSettings, useSession, useSettings, useUnlinkIdentity } from '@/entities/session'
 import { LoginButtons, LogoutButton } from '@/features/auth'
 import { cn } from '@/shared/lib/cn'
+import { useSingleFlight } from '@/shared/lib/use-single-flight'
 import { dateTime, mapName } from '@/shared/lib/format'
 import { AsyncView, Badge, Button, Card, CardContent, CardDescription, CardHeader, CardTitle, ConfirmButton, EmptyState, InlineError, Input, LoadingSkeleton, Select, Skeleton } from '@/shared/ui'
 
@@ -106,6 +107,7 @@ const same = (a: UserSettings, b: UserSettings) => JSON.stringify(a) === JSON.st
  * with a toast and reports failures right next to the button. */
 function Preferences({ initial }: { initial: UserSettings }) {
   const save = useSaveSettings()
+  const once = useSingleFlight()
   const [form, setForm] = useState<UserSettings>(initial)
   const [watch, setWatch] = useState('')
   // a newer server copy (another tab, or our own save) replaces the form only when it has no local edits
@@ -185,7 +187,7 @@ function Preferences({ initial }: { initial: UserSettings }) {
           </Button>
         </div>
         <div className="flex flex-wrap items-center gap-3 border-t pt-4">
-          <Button onClick={() => save.mutate(form, { onSuccess: (d) => setBase(d) })} loading={save.isPending} disabled={!dirty}>
+          <Button onClick={() => once(() => save.mutateAsync(form).then(setBase))} loading={save.isPending} disabled={!dirty}>
             Сохранить
           </Button>
           {dirty && !save.isPending && (

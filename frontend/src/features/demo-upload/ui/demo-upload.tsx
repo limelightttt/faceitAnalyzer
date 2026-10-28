@@ -9,6 +9,7 @@ import { apiUpload } from '@/shared/api/client'
 import { cn } from '@/shared/lib/cn'
 import { bytes } from '@/shared/lib/format'
 import { notify } from '@/shared/lib/notify'
+import { useSingleFlight } from '@/shared/lib/use-single-flight'
 import { Button, InlineError, Progress } from '@/shared/ui'
 
 const ACCEPT = ['.dem', '.dem.gz', '.dem.bz2', '.dem.zst']
@@ -38,6 +39,7 @@ export function DemoUpload({ className }: { className?: string }) {
       navigate(`/demos/${meta.id}`)
     },
   })
+  const once = useSingleFlight()
   const uploading = upload.isPending
   const cancelled = upload.error instanceof DOMException && upload.error.name === 'AbortError'
 
@@ -50,7 +52,7 @@ export function DemoUpload({ className }: { className?: string }) {
     setLocalError(null)
     setFile(f)
     setProgress(0)
-    upload.mutate(f)
+    once(() => upload.mutateAsync(f))
   }
   const onDrop = (e: DragEvent) => {
     e.preventDefault()

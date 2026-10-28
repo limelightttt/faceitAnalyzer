@@ -28,13 +28,15 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
   asChild?: boolean
   /** pending action: shows a spinner instead of the icon, blocks repeated clicks, keeps the label */
   loading?: boolean
+  /** act on every click of a double-click (off by default: a double-click is one intent) */
+  allowRepeat?: boolean
 }
 
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant, size, asChild = false, loading = false, disabled, children, ...props }, ref) => {
+  ({ className, variant, size, asChild = false, loading = false, allowRepeat = false, disabled, children, onClick, ...props }, ref) => {
     if (asChild)
       return (
-        <Slot className={cn(buttonVariants({ variant, size, className }))} ref={ref} {...props}>
+        <Slot className={cn(buttonVariants({ variant, size, className }))} ref={ref} onClick={onClick} {...props}>
           {children}
         </Slot>
       )
@@ -44,6 +46,11 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         ref={ref}
         disabled={disabled || loading}
         aria-busy={loading || undefined}
+        // the 2nd click of a double-click arrives before React Query marks the action pending
+        onClick={(e) => {
+          if (e.detail > 1 && !allowRepeat) return
+          onClick?.(e)
+        }}
         {...props}
       >
         {loading && <Spinner />}

@@ -6,6 +6,7 @@ import { useDetectMatch, useStartScout } from '@/entities/scout'
 import { useSession } from '@/entities/session'
 import { trackJob } from '@/features/job-tracking'
 import { cn } from '@/shared/lib/cn'
+import { useSingleFlight } from '@/shared/lib/use-single-flight'
 import { Button, InlineError, Input } from '@/shared/ui'
 
 const ROOM_RE = /1-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i
@@ -19,16 +20,14 @@ export function ScoutLaunch({ className, size = 'default' }: { className?: strin
   const { data: session } = useSession()
   const busy = start.isPending || start.isSuccess || detect.isPending
 
+  const once = useSingleFlight()
   const go = (value: string) => {
     setNote(null)
-    start.mutate(
-      { url: value },
-      {
-        onSuccess: (r) => {
-          trackJob({ kind: 'scout', id: r.id, label: `Матч ${r.match_id.slice(0, 13)}…` })
-          navigate(`/scout/${r.id}`)
-        },
-      },
+    once(() =>
+      start.mutateAsync({ url: value }).then((r) => {
+        trackJob({ kind: 'scout', id: r.id, label: `Матч ${r.match_id.slice(0, 13)}…` })
+        navigate(`/scout/${r.id}`)
+      }),
     )
   }
   const submit = (e: FormEvent) => {
