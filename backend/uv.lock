@@ -75,6 +75,14 @@ wheels = [
 name = "demoparser2"
 version = "0.42.0"
 source = { registry = "https://pypi.org/simple" }
+resolution-markers = [
+    "python_full_version >= '3.14' and sys_platform == 'emscripten'",
+    "python_full_version >= '3.14' and sys_platform != 'emscripten' and sys_platform != 'win32'",
+    "python_full_version >= '3.12' and python_full_version < '3.14' and sys_platform == 'emscripten'",
+    "python_full_version >= '3.12' and python_full_version < '3.14' and sys_platform != 'emscripten' and sys_platform != 'win32'",
+    "python_full_version < '3.12' and sys_platform == 'emscripten'",
+    "python_full_version < '3.12' and sys_platform != 'emscripten' and sys_platform != 'win32'",
+]
 dependencies = [
     { name = "numpy", version = "2.4.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
     { name = "numpy", version = "2.5.4", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
@@ -88,26 +96,46 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/f9/bf/2c962db2db16ce6ab7d43763fe6c5abc6f15bba76826681f21b260f50df4/demoparser2-0.42.0-cp311-cp311-macosx_11_0_arm64.whl", hash = "sha256:b9ef2774a504ad36fe390028d62650b1f83dbe757988f31dbcd9db162facb5d6", size = 3843323, upload-time = "2026-08-08T15:36:01.213Z" },
     { url = "https://files.pythonhosted.org/packages/f6/8f/757f3e68abdb2898a7dd6a86dbb8de574afac95eeee82e73f198f5489ffd/demoparser2-0.42.0-cp311-cp311-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:d62e9796df903ea14b51b26db481c6a75cd14ad99aac7b7ab54f66382c690c9b", size = 3995933, upload-time = "2026-08-08T15:33:47.079Z" },
     { url = "https://files.pythonhosted.org/packages/b3/01/cf494b4a7320a5c208a5c0e55cb19df617475eb02222944a7d2a8f98cfc6/demoparser2-0.42.0-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:f00a2a2178ce5781aad239bc059ed7f353038a21df3720da951b9392be2750f1", size = 4359587, upload-time = "2026-08-08T15:33:27.336Z" },
-    { url = "https://files.pythonhosted.org/packages/97/ea/d03876d9c82717cb900562d2e722a1c42787f546a1cecf6b5aa9261d6523/demoparser2-0.42.0-cp311-cp311-win32.whl", hash = "sha256:9e26382def1329c02222602ff87cf96b6569d6fc7502400d2a48360df0eed55f", size = 4036966, upload-time = "2026-08-08T15:34:07.246Z" },
-    { url = "https://files.pythonhosted.org/packages/66/48/f526dc17ec16f80d49dbe1c0a3bb1b551aae7b80d16e01a8560feff6c7e0/demoparser2-0.42.0-cp311-cp311-win_amd64.whl", hash = "sha256:06349d2d40b52a326d03e816c65a9089650a75ceb55ea6700e3101e392d0b65b", size = 4582131, upload-time = "2026-08-08T15:33:37.66Z" },
     { url = "https://files.pythonhosted.org/packages/87/41/bd7eef19380be1f06d1ca924c08fe2ab9d3f6c68b6e762aae84b10457ba5/demoparser2-0.42.0-cp312-cp312-macosx_10_12_x86_64.whl", hash = "sha256:fb6fb7bd8ab7d49ac9a8b3f4eb08436f6a917cfb2dc5af4fd26138cc0729a153", size = 4127019, upload-time = "2026-08-08T15:36:23.822Z" },
     { url = "https://files.pythonhosted.org/packages/43/20/a964629083098e463837677aa342bbf56d52a1e37060654820761fb98a0d/demoparser2-0.42.0-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:b13077541c30aead994127a114a434f32c5ab62ad901c1ff42e11fc29ccdffaa", size = 3817242, upload-time = "2026-08-08T15:39:40.63Z" },
     { url = "https://files.pythonhosted.org/packages/ff/9b/107ac2267177a0a62aa45eb85b701f9f5e32bde19e331872b7a93aea5a0c/demoparser2-0.42.0-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:74436ea78765a3e61f36c50a92e1539abf976940f66f07552093a2a307a2bf05", size = 3993452, upload-time = "2026-08-08T15:29:57.337Z" },
     { url = "https://files.pythonhosted.org/packages/a7/e4/5c6aba828d3e67db32676cadc1c9e230a96e8407be836285b898d0d5d01f/demoparser2-0.42.0-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:63bae3c3c45fe2c30d408699d41f87fa3a286633b12f81ecf57cea09c2a135a1", size = 4356773, upload-time = "2026-08-08T15:29:28.322Z" },
-    { url = "https://files.pythonhosted.org/packages/23/eb/e761a6bedd4b7deb5a69774b2519a56dbac1a227aba6f4fe8125a3fbb83e/demoparser2-0.42.0-cp312-cp312-win32.whl", hash = "sha256:f4a04f0b095550554eb16e68e00c7008d8189f47e9d29ce91a863c48042f7f16", size = 4035803, upload-time = "2026-08-08T15:41:11.894Z" },
-    { url = "https://files.pythonhosted.org/packages/37/89/577e67ee3692f4322f8bcb50be65cffccc788fd1407f6561eeaf459886a2/demoparser2-0.42.0-cp312-cp312-win_amd64.whl", hash = "sha256:81b489396f32e9d9084aae2e4bf9887ea2be9db4b91781b6cb3a77722fbc8f19", size = 4580290, upload-time = "2026-08-08T15:33:01.659Z" },
     { url = "https://files.pythonhosted.org/packages/61/d6/c2008f2b1dd991919cced281ece3125926406ae737c7badd00320c9cac87/demoparser2-0.42.0-cp313-cp313-macosx_10_12_x86_64.whl", hash = "sha256:3931ae561fd7b77f31f21cafd8d4905a8447741538d5b05134ead88d9c082a34", size = 4127044, upload-time = "2026-08-08T15:28:42.958Z" },
     { url = "https://files.pythonhosted.org/packages/e4/df/53da0f4c68814c724638cccda57ecb300fe810a07af7cea78361d2c26372/demoparser2-0.42.0-cp313-cp313-macosx_11_0_arm64.whl", hash = "sha256:1204262603afd003a2589d4d2e6a85b47e9360b8d6fadbefe6d8f45aab787f8e", size = 3816997, upload-time = "2026-08-08T15:40:57.65Z" },
     { url = "https://files.pythonhosted.org/packages/2a/40/62b771893d1aee0f795aec4c26ebaef0457a40609b1a4a0591adfe298c74/demoparser2-0.42.0-cp313-cp313-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:8e0196aaf2faff5afd64a61373d5193fd7766ccaf2ddd9b00c5f6a8b1c8c8702", size = 3993333, upload-time = "2026-08-08T15:38:39.702Z" },
     { url = "https://files.pythonhosted.org/packages/68/3c/d1b63c525229d500dfb5f2d1f7605da3142844770e6244d9da1752109dae/demoparser2-0.42.0-cp313-cp313-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:cb4e9a7ec5869af085ac81828150f0bf2fe2f06bb07dd23409600ed2b1f3edd9", size = 4357002, upload-time = "2026-08-08T15:29:39.341Z" },
-    { url = "https://files.pythonhosted.org/packages/41/c2/6a8d7a23d8d66c7a167532d8cd0fe02bbe9335b7f64013ea265c67240720/demoparser2-0.42.0-cp313-cp313-win32.whl", hash = "sha256:d05234925bbf742a13a5ccb99aa9af0b03d9c2b795130189a01157fedcd7867b", size = 4036444, upload-time = "2026-08-08T15:39:23.78Z" },
-    { url = "https://files.pythonhosted.org/packages/f6/5d/996c78e1f1332a6722088dab9f33c9e354e413c04006bb81f2b137d63cc2/demoparser2-0.42.0-cp313-cp313-win_amd64.whl", hash = "sha256:2df147197bb51d495281bc3286f971978715d87442473f35f8bdd694d2ec8ddf", size = 4579758, upload-time = "2026-08-08T15:33:10.084Z" },
     { url = "https://files.pythonhosted.org/packages/ad/c9/7261fa6a9027b94537e874d42a1a9b3e6b3fa20a74d4e50dbbd1bfdfdf54/demoparser2-0.42.0-cp314-cp314-macosx_10_12_x86_64.whl", hash = "sha256:5756972105e1760c5752e96fa8a520d7c07b5393031af1951a7b3815d2bf278c", size = 4126972, upload-time = "2026-08-08T15:39:09.168Z" },
     { url = "https://files.pythonhosted.org/packages/77/25/b94b455bf62854bffeea56e2d593ad02d54707dbf87ce433f18b0ea12cf9/demoparser2-0.42.0-cp314-cp314-macosx_11_0_arm64.whl", hash = "sha256:d5bf46b1ec7a396236ba9b3533f1148ab9b7379399a8e17b5efe469ffff49557", size = 3841676, upload-time = "2026-08-08T15:35:46.463Z" },
     { url = "https://files.pythonhosted.org/packages/46/c5/674257569758eaea570888e26fdc43267b5e82471934f06718fc8e9e9aaf/demoparser2-0.42.0-cp314-cp314-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:6da9052cb331a26e162b20fec252ad4094eda3cb4bd0694a029ec089508bf6fd", size = 3993790, upload-time = "2026-08-08T15:29:49.384Z" },
     { url = "https://files.pythonhosted.org/packages/d6/84/2a13be6b44f2aaa0861d17278ccaed850c286f52185e76f72c2259e5516b/demoparser2-0.42.0-cp314-cp314-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:4db59e532183ab91530e0f2c13336214ba39cb4a5f1facac1cda6ff224c3e5f8", size = 4357337, upload-time = "2026-08-08T15:28:47.918Z" },
-    { url = "https://files.pythonhosted.org/packages/d0/5b/2510a334af19ec0a1ecba2317a6153b256cc9e0ea9335390e27462529324/demoparser2-0.42.0-cp314-cp314-win32.whl", hash = "sha256:d5d149c8c7586dcef95e7015fd273f77986318a77d3f1c9886ab09b103935b09", size = 4037067, upload-time = "2026-08-08T15:38:03.508Z" },
-    { url = "https://files.pythonhosted.org/packages/3a/e5/9354595446a9af18c5637670f69b8a5619a4c368848ae9ae6fc4162a1234/demoparser2-0.42.0-cp314-cp314-win_amd64.whl", hash = "sha256:2f88f39600bd5c793606db229d6534b59017d9f9ae2da90c6e732ad79e3ba002", size = 4580988, upload-time = "2026-08-08T15:41:59.258Z" },
+]
+
+[[package]]
+name = "demoparser2"
+version = "0.42.1"
+source = { registry = "https://pypi.org/simple" }
+resolution-markers = [
+    "python_full_version >= '3.14' and sys_platform == 'win32'",
+    "python_full_version >= '3.12' and python_full_version < '3.14' and sys_platform == 'win32'",
+    "python_full_version < '3.12' and sys_platform == 'win32'",
+]
+dependencies = [
+    { name = "numpy", version = "2.4.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
+    { name = "numpy", version = "2.5.4", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
+    { name = "pandas" },
+    { name = "polars" },
+    { name = "pyarrow" },
+    { name = "tqdm" },
+]
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/15/02/d25d288fded985f3ec37b9e0d5c30754f3d0b23d1ce1d240b59b42f50044/demoparser2-0.42.1-cp311-cp311-win32.whl", hash = "sha256:0742d18bacad0df9cfa02066aa8aa1c914fe7621ef8005ce57f25bd1d03dd1ca", size = 4045583, upload-time = "2026-10-25T16:45:12.562Z" },
+    { url = "https://files.pythonhosted.org/packages/68/a5/bc119d20c587b58c9d9b9a6f054dc5f4ba3bbaed3c26bde7108d3e9cc3b5/demoparser2-0.42.1-cp311-cp311-win_amd64.whl", hash = "sha256:da34a0d0a9ffd21f0003a864d04ca6757848797e3c35fa3efde950faa29287ae", size = 4612159, upload-time = "2026-10-25T16:44:55.167Z" },
+    { url = "https://files.pythonhosted.org/packages/7c/20/f6ac61f78c09a1b2badd1e397413704e7d570deaa2034d3865ccccb849fc/demoparser2-0.42.1-cp312-cp312-win32.whl", hash = "sha256:cfba9f38ee1ff1ffef08816a0e48ff9a6c37df2a8e05624192b2b02a136483a2", size = 4044777, upload-time = "2026-10-25T16:45:13.24Z" },
+    { url = "https://files.pythonhosted.org/packages/e9/cd/b90237ddd5405dee0343d2b2fa932aac746f8ca020437566d5a41e2f1d9c/demoparser2-0.42.1-cp312-cp312-win_amd64.whl", hash = "sha256:288c9df0141774cb5eeb951221b1651e0f4b2756dd98dd8d2cfb6e66adfa8155", size = 4612079, upload-time = "2026-10-25T16:44:27.992Z" },
+    { url = "https://files.pythonhosted.org/packages/f6/de/ff09046c5d5a828d8a29a28042a0cda5a045b68a3ef22afb8cf61c2df641/demoparser2-0.42.1-cp313-cp313-win32.whl", hash = "sha256:3083c267682a8608e6f0a6928b2d41236de25d7de71f4fd7b50e6c0df42f5aa2", size = 4044816, upload-time = "2026-10-25T16:43:04.34Z" },
+    { url = "https://files.pythonhosted.org/packages/4e/88/1e31d914355efd420ec5790f22338c3ccfe7a1ccd7d9d0c8f78b4d7f9c7c/demoparser2-0.42.1-cp313-cp313-win_amd64.whl", hash = "sha256:18a6258f75e927d002340d41ae654865e8512ac2fc4faa013a1174bcc4ff4d03", size = 4611746, upload-time = "2026-10-25T16:44:01.899Z" },
+    { url = "https://files.pythonhosted.org/packages/2b/7b/d267b1b3d3769f39c9c963620687b765f6fdd8ace31e73bb0c953fa081d7/demoparser2-0.42.1-cp314-cp314-win32.whl", hash = "sha256:521f4973e0f2bae1790c99044a6c3e2df96bf6d0891639d5545ef49f8de986f7", size = 4043102, upload-time = "2026-10-25T16:44:17.282Z" },
+    { url = "https://files.pythonhosted.org/packages/af/63/8c005b863293788b83e35a41722f60107fa0b338dd486a0910fc14571c71/demoparser2-0.42.1-cp314-cp314-win_amd64.whl", hash = "sha256:95d92b5ca19e1568941b64714d9893891c70e366c7566286b88fc75febc1e133", size = 4612984, upload-time = "2026-10-25T16:44:47.675Z" },
 ]
 
 [[package]]
@@ -115,7 +143,8 @@ name = "faceit-intelligence-backend"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
-    { name = "demoparser2" },
+    { name = "demoparser2", version = "0.42.0", source = { registry = "https://pypi.org/simple" }, marker = "sys_platform != 'win32'" },
+    { name = "demoparser2", version = "0.42.1", source = { registry = "https://pypi.org/simple" }, marker = "sys_platform == 'win32'" },
     { name = "fastapi" },
     { name = "httpx" },
     { name = "itsdangerous" },
@@ -141,7 +170,8 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "demoparser2", specifier = "==0.42.0" },
+    { name = "demoparser2", marker = "sys_platform != 'win32'", specifier = "==0.42.0" },
+    { name = "demoparser2", marker = "sys_platform == 'win32'", specifier = "==0.42.1" },
     { name = "fastapi", specifier = ">=0.115" },
     { name = "httpx", specifier = ">=0.27" },
     { name = "itsdangerous", specifier = ">=2.1" },
