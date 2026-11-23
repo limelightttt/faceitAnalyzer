@@ -5,6 +5,7 @@ from dataclasses import dataclass, field
 from fastapi import Depends, Request
 from sqlalchemy.orm import Session
 
+from .ai_coach.llm import ClaudeCoach
 from .auth.security import RateLimiter, check_csrf, load_session
 from .config import Settings
 from .db import AuthSession, Database, User
@@ -21,6 +22,7 @@ class AppState:
     demos: DemoStore
     limiter: RateLimiter = field(default_factory=RateLimiter)
     auth_transport: object | None = None  # outbound OpenID/OAuth HTTP transport (tests inject a mock)
+    coach_llm: object | None = None  # ClaudeCoach when ANTHROPIC_API_KEY is set (tests inject a fake)
 
 
 def build_state(settings: Settings, provider: object | None = None) -> AppState:
@@ -40,7 +42,22 @@ def build_state(settings: Settings, provider: object | None = None) -> AppState:
     else:
         provider = UnconfiguredProvider()
     db = Database(settings.db_url)
-    return AppState(settings=settings, db=db, provider=provider, demos=DemoStore(settings.data_dir / "demos"))
+    coach_llm = (
+        ClaudeCoach(
+            settings.anthropic_api_key.get_secret_value(),
+            settings.coach_review_model,
+            settings.coach_chat_model,
+        )
+        if settings.coach_enabled
+        else None
+    )
+    return AppState(
+        settings=settings,
+        db=db,
+        provider=provider,
+        demos=DemoStore(settings.data_dir / "demos"),
+        coach_llm=coach_llm,
+    )
 
 
 def get_state(request: Request) -> AppState:

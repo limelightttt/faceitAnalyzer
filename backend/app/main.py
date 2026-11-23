@@ -20,16 +20,20 @@ from .config import Settings, get_settings
 from .db import ScoutReport, TacticalSample
 from .providers.base import ProviderError
 from .providers.faceit_api import FaceitApiProvider
-from .routes import auth, coach, demos, maps, me, players, scout, stack
+from .routes import ai_coach, auth, coach, demos, maps, me, players, scout, stack
 from .state import build_state
 from .tactical.profiles import fingerprint, ingest
 
 log = logging.getLogger("faceit_intelligence")
 
 
-def create_app(settings: Settings | None = None, provider: object | None = None) -> FastAPI:
+def create_app(
+    settings: Settings | None = None, provider: object | None = None, coach_llm: object | None = None
+) -> FastAPI:
     settings = settings or get_settings()
     ctx = build_state(settings, provider)
+    if coach_llm is not None:
+        ctx.coach_llm = coach_llm
 
     def on_demo_done(demo_id: str, analysis: dict) -> None:
         tactical = analysis.get("tactical")
@@ -175,6 +179,7 @@ def create_app(settings: Settings | None = None, provider: object | None = None)
         scout.router,
         stack.router,
         coach.router,
+        ai_coach.router,
         maps.router,
     ):
         app.include_router(r)

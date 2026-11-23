@@ -38,5 +38,7 @@ Never print or commit `backend\.env` contents, keys or session tokens; never ena
 
 ## Conventions
 - Never invent data: only FACEIT Data API and uploaded demos; mark facts / estimates / hypotheses.
+- AI coach (`app/ai_coach/`): Claude sees only the dossier; every point must cite dossier fact ids. Paid calls only on
+  click; limits/budget in `routes/ai_coach.py`. Tests use a fake coach; E2E uses the mock's `/v1/messages`.
 - No "dodge" advice; risk signals are statistical, never accusations; toxicity is never inferred.
 - Each fix comes with a regression test; keep FSD layer boundaries; no dead code.

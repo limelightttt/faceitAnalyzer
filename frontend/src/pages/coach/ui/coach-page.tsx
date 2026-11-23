@@ -4,6 +4,7 @@ import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YA
 
 import { type CoachGoal, type CoachOverview, useCoach, useCreateGoal, useDeleteGoal } from '@/entities/coach'
 import { useSession } from '@/entities/session'
+import { AiCoach, goalKey } from '@/features/ai-coach'
 import { LoginButtons } from '@/features/auth'
 import { cn } from '@/shared/lib/cn'
 import { dateTime, fmt, mapName, pct } from '@/shared/lib/format'
@@ -112,6 +113,7 @@ function Coach({ d, create }: { d: CoachOverview; create: ReturnType<typeof useC
           Выводы строятся из ваших матчей FACEIT ({d.insights.matches_used} со статистикой) и разобранных демок ({d.demos.length}). Без общих советов — только измеренные отклонения.
         </p>
       </div>
+      <AiCoach goals={d.goals.map((g) => goalKey(g.metric, g.map))} />
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1.4fr_1fr]">
         <Card>
           <CardHeader>

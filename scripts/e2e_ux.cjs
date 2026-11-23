@@ -83,7 +83,7 @@ const FAST_3G = { latency: 563, downloadThroughput: (1.6 * 1024 * 1024) / 8, upl
   start('app', ['uvicorn', 'app.main:app', '--host', '127.0.0.1', '--port', '8020'], {
     FACEIT_API_BASE: `${MOCK}/data/v4`, FACEIT_API_KEY: 'test-key', FACEIT_REQUESTS_PER_SECOND: '25',
     AUTH_DEV_LOGIN: 'true', DATA_DIR: DATA, APP_BASE_URL: BASE, REQUIRE_LOGIN: 'true', TRACKING_INTERVAL_MINUTES: '0', PREDICTION_CHECK_MINUTES: '0',
-    CORS_ORIGINS: JSON.stringify([BASE]),
+    CORS_ORIGINS: JSON.stringify([BASE]), ANTHROPIC_API_KEY: 'test-key', ANTHROPIC_BASE_URL: MOCK,
   })
   await waitUrl(`${MOCK}/admin/upcoming`)
   await waitUrl(`${BASE}/api/health`)
@@ -294,6 +294,25 @@ const FAST_3G = { latency: 563, downloadThroughput: (1.6 * 1024 * 1024) / 8, upl
     ok(true, 'stack: a duo map pool counts the games played together')
     await shot(page, 'stack-1-duo', true)
 
+    // ── 3c. AI coach (the mock stands in for the Claude API): paid only on a click, limits visible ─────
+    await page.getByRole('link', { name: 'Коуч', exact: true }).click()
+    await page.getByRole('button', { name: 'Разобрать мою игру' }).click()
+    await page.getByRole('heading', { name: 'Что тянет вниз', exact: true }).waitFor({ timeout: 60000 })
+    ok(await page.getByText(/Разборы: 2 из 3 на 24 ч · следующий в \d\d:\d\d/).isVisible(), 'coach: a review on click, the daily limit and its reset time are shown')
+    ok(await page.getByText(/Win rate — последние матчи: \d+% \(n = \d+\)/).isVisible(), 'coach: each conclusion shows the app facts behind it')
+    await shot(page, 'coach-1-review', true)
+    await page.getByLabel('Вопрос коучу').fill('Почему я проигрываю на Nuke?')
+    await page.getByRole('button', { name: 'Спросить' }).click()
+    await page.getByText('Играй от размена: на Nuke').waitFor({ timeout: 30000 })
+    ok(await page.getByText(/Вопросы: 14 из 15/).isVisible(), 'coach: a follow-up question is answered and counted')
+    await page.getByRole('button', { name: 'Обновить разбор' }).click()
+    await page.getByText('новых матчей нет, разбор актуален').waitFor()
+    ok(await page.getByText(/Разборы: 2 из 3/).isVisible(), 'coach: the same data is never billed twice')
+    await page.getByRole('button', { name: /Сделать целью: ADR/ }).click()
+    await page.getByRole('button', { name: 'Цель уже есть' }).waitFor()
+    ok(true, 'coach: advice becomes a tracked goal in one click')
+    await shot(page, 'coach-2-chat', true)
+
     // ── 4. Demo upload: progress, cancel, failure + retry, processing, duplicate ──────────────────────
     await page.getByRole('link', { name: 'Демки', exact: true }).click()
     await page.getByText('Перетащите CS2-демку сюда').waitFor()
@@ -343,7 +362,8 @@ const FAST_3G = { latency: 563, downloadThroughput: (1.6 * 1024 * 1024) / 8, upl
     await page.getByRole('button', { name: 'Nuke' }).click()
     await page.getByText('Есть несохранённые изменения').waitFor()
     await save.dblclick()
-    ok((await save.getAttribute('aria-busy')) === 'true', 'settings: save shows its pending state immediately')
+    await page.locator('button[aria-busy="true"]', { hasText: 'Сохранить' }).waitFor({ timeout: 500 })
+    ok(true, 'settings: save shows its pending state immediately')
     await shot(page, 'settings-1-saving')
     await toast(page, 'Настройки сохранены').waitFor({ timeout: 10000 })
     await page.getByText('Сохранено', { exact: true }).waitFor()
@@ -434,8 +454,8 @@ const FAST_3G = { latency: 563, downloadThroughput: (1.6 * 1024 * 1024) / 8, upl
       const s = page.getByRole('button', { name: 'Сохранить' })
       const clicked = Date.now()
       await s.click()
-      const busy = await s.getAttribute('aria-busy')
-      ok(busy === 'true' && Date.now() - clicked < 1000, `${label}: actions respond immediately (pending after ${Date.now() - clicked} ms)`)
+      await page.locator('button[aria-busy="true"]', { hasText: 'Сохранить' }).waitFor({ timeout: 1000 })
+      ok(Date.now() - clicked < 1000, `${label}: actions respond immediately (pending after ${Date.now() - clicked} ms)`)
       await toast(page, 'Настройки сохранены').waitFor({ timeout: budget })
       note(`${label}: save confirmed after ${Date.now() - clicked} ms`)
       if (label === 'Slow 3G') await shot(page, 'net-4-slow3g-saved')

@@ -81,10 +81,8 @@ def _progress(goal: Goal, ds, demo_rows: list[dict]) -> dict:
     }
 
 
-@router.get("")
-async def overview(
-    db: Session = Depends(get_db), state: AppState = Depends(get_state), auth: Auth = Depends(require_user)
-):
+async def gather(db: Session, state: AppState, auth: Auth) -> dict:
+    """Everything the coach knows about the signed-in player (the page and the AI coach share it)."""
     gp = _profile(db, auth)
     ds = await load_player_dataset(state.provider, gp.nickname, 100, state.settings.data_dir, state.db)
     ins = insights.compute_insights(ds)
@@ -93,6 +91,39 @@ async def overview(
     goals = db.scalars(
         select(Goal).where(Goal.user_id == auth.user.id).order_by(Goal.created_at.desc())
     ).all()
+    return {
+        "profile": gp,
+        "steam_id": steam,
+        "ds": ds,
+        "insights": ins,
+        "demos": rows,
+        "mistakes": coach.repeated_mistakes(rows),
+        "weekly": coach.weekly(ds),
+        "goals": [
+            {
+                "id": g.id,
+                "metric": g.metric,
+                "label": coach.METRICS[g.metric]["label"],
+                "map": g.map,
+                "direction": g.direction,
+                "baseline": g.baseline,
+                "baseline_n": g.baseline_n,
+                "target": g.target,
+                "created_at": g.created_at.isoformat() + "Z",
+                "status": g.status,
+                "progress": _progress(g, ds, rows),
+            }
+            for g in goals
+        ],
+    }
+
+
+@router.get("")
+async def overview(
+    db: Session = Depends(get_db), state: AppState = Depends(get_state), auth: Auth = Depends(require_user)
+):
+    g = await gather(db, state, auth)
+    gp, ins, rows = g["profile"], g["insights"], g["demos"]
     suggestions = []
     for it in ins["items"]:
         if it["status"] == "weakness" and INSIGHT_TO_METRIC.get(it["key"]):
@@ -117,34 +148,19 @@ async def overview(
                 }
             )
     return {
-        "profile": {"nickname": gp.nickname, "player_id": gp.faceit_player_id, "steam_id": steam},
-        "quality": ds.quality,
-        "weekly": coach.weekly(ds),
+        "profile": {"nickname": gp.nickname, "player_id": gp.faceit_player_id, "steam_id": g["steam_id"]},
+        "quality": g["ds"].quality,
+        "weekly": g["weekly"],
         "insights": {
             "strengths": ins["strengths"],
             "weaknesses": ins["weaknesses"],
             "matches_used": ins["matches_used"],
         },
         "demos": rows,
-        "mistakes": coach.repeated_mistakes(rows),
+        "mistakes": g["mistakes"],
         "suggestions": suggestions,
         "metrics": coach.METRICS,
-        "goals": [
-            {
-                "id": g.id,
-                "metric": g.metric,
-                "label": coach.METRICS[g.metric]["label"],
-                "map": g.map,
-                "direction": g.direction,
-                "baseline": g.baseline,
-                "baseline_n": g.baseline_n,
-                "target": g.target,
-                "created_at": g.created_at.isoformat() + "Z",
-                "status": g.status,
-                "progress": _progress(g, ds, rows),
-            }
-            for g in goals
-        ],
+        "goals": g["goals"],
     }
 
 

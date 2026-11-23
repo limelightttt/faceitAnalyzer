@@ -31,6 +31,7 @@ def make_settings(tmp: Path, **kw) -> Settings:
         require_login=False,
         tracking_interval_minutes=0,  # background jobs are tested directly, never on a timer
         prediction_check_minutes=0,
+        anthropic_api_key=None,  # never a real Claude key from the developer's environment
         sample_demos_dir=get_settings().sample_demos_dir,
         fixtures_dir=get_settings().fixtures_dir,
     )
