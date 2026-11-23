@@ -7,6 +7,7 @@ Then: FACEIT_API_BASE=http://127.0.0.1:8901/data/v4 FACEIT_API_KEY=test-key uvic
 
 import argparse
 import asyncio
+import json
 
 from fastapi import FastAPI, Header, HTTPException, Request
 
@@ -112,6 +113,60 @@ def create_mock(world=None) -> FastAPI:
         mp = (await request.json()).get("map")
         w["details"][mid]["voting"]["map"]["pick"] = [mp] if mp else []
         return {"map": mp}
+
+    @app.post("/v1/messages")
+    async def claude(request: Request):
+        """E2E: stands in for the Claude Messages API (ANTHROPIC_BASE_URL), answering in the requested schema."""
+        body = await request.json()
+        if "answer" in body["output_config"]["format"]["schema"]["properties"]:
+            out = {
+                "answer": "Играй от размена: на Nuke держи позицию рядом с тиммейтом.",
+                "memory": "Спрашивал про Nuke.",
+            }
+        else:
+            out = {
+                "summary": "Форма просела: последние матчи хуже предыдущих.",
+                "problems": [
+                    {
+                        "title": "Проигрываешь чаще, чем раньше",
+                        "detail": "Win rate последних матчей ниже, чем до них.",
+                        "certainty": "fact",
+                        "evidence": ["form.recent.win_rate", "form.before.win_rate"],
+                    }
+                ],
+                "actions": [
+                    {
+                        "title": "Подними урон за раунд",
+                        "detail": "Играй от размена и не отдавай первую смерть без урона.",
+                        "evidence": ["form.recent.adr"],
+                        "goal_metric": "adr",
+                        "goal_map": None,
+                    }
+                ],
+                "strengths": [
+                    {
+                        "title": "Стабильный Elo",
+                        "detail": "Держишь уровень.",
+                        "certainty": "estimate",
+                        "evidence": ["profile.elo"],
+                    }
+                ],
+            }
+        return {
+            "id": "msg_e2e",
+            "type": "message",
+            "role": "assistant",
+            "model": body["model"],
+            "content": [{"type": "text", "text": json.dumps(out, ensure_ascii=False)}],
+            "stop_reason": "end_turn",
+            "stop_sequence": None,
+            "usage": {
+                "input_tokens": 9000,
+                "output_tokens": 1200,
+                "cache_read_input_tokens": 0,
+                "cache_creation_input_tokens": 0,
+            },
+        }
 
     @app.post("/admin/finish/{mid}")
     async def finish(mid: str, request: Request):

@@ -60,6 +60,17 @@ class Settings(BaseSettings):
     # Optional comma-separated allowlist: SteamID64, FACEIT player id or FACEIT nickname. Empty = anyone may sign in.
     beta_allowlist: str = ""
 
+    # --- AI coach (Claude API) ----------------------------------------------------------------------
+    # Without a key the coach page explains how to enable it; every other feature works without it.
+    anthropic_api_key: SecretStr | None = None
+    # FACEIT nickname of the owner: no daily limits (the monthly budget still applies to everyone).
+    coach_owner: str = "limelightttt"
+    coach_review_model: str = "claude-opus-5-5"  # rare, decides what to train: the strongest model
+    coach_chat_model: str = "claude-sonnet-5-5"  # follow-up questions: fast and cheaper
+    coach_reviews_per_day: int = Field(default=3, ge=0)  # per user, rolling 24 hours
+    coach_questions_per_day: int = Field(default=15, ge=0)
+    coach_monthly_budget_usd: float = Field(default=25.0, ge=0)  # all users together, calendar month (UTC)
+
     def allowed(self, *candidates: str | None) -> bool:
         entries = {e.strip().lower() for e in self.beta_allowlist.split(",") if e.strip()}
         return not entries or any(c and c.strip().lower() in entries for c in candidates)
@@ -69,6 +80,13 @@ class Settings(BaseSettings):
         if self.faceit_provider == "fixtures":
             return False
         return self.faceit_api_key is not None and bool(self.faceit_api_key.get_secret_value().strip())
+
+    @property
+    def coach_enabled(self) -> bool:
+        return self.anthropic_api_key is not None and bool(self.anthropic_api_key.get_secret_value().strip())
+
+    def is_coach_owner(self, nickname: str | None) -> bool:
+        return bool(nickname and self.coach_owner and nickname.lower() == self.coach_owner.strip().lower())
 
     @property
     def secure_cookies(self) -> bool:

@@ -10,6 +10,7 @@ Separation of concerns, as required:
 * feedback                   — user opinions about conclusions, stored separately from facts
 * tactical_samples           — positional observations extracted from parsed demos
 * goals                      — coaching goals with frozen baselines
+* coach_reviews / coach_messages / coach_calls — AI coach output, its chat and every billed model call
 """
 
 from collections.abc import Iterator
@@ -221,6 +222,47 @@ class Goal(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
     baseline_until: Mapped[datetime | None] = mapped_column(DateTime)  # matches after this count as progress
     status: Mapped[str] = mapped_column(String(16), default="active")
+
+
+class CoachReview(Base):
+    """One AI review of a player's dossier. The dossier is stored as sent, so evidence stays checkable."""
+
+    __tablename__ = "coach_reviews"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+    model: Mapped[str] = mapped_column(String(64))
+    data_hash: Mapped[str] = mapped_column(String(64))  # same data -> the stored review is shown again
+    last_match_id: Mapped[str | None] = mapped_column(String(64))
+    dossier: Mapped[dict] = mapped_column(JSON)
+    result: Mapped[dict] = mapped_column(JSON)
+    memory: Mapped[str] = mapped_column(Text, default="")  # chat notes the coach keeps instead of history
+
+
+class CoachMessage(Base):
+    __tablename__ = "coach_messages"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    review_id: Mapped[int] = mapped_column(ForeignKey("coach_reviews.id", ondelete="CASCADE"), index=True)
+    role: Mapped[str] = mapped_column(String(8))  # player | coach
+    text: Mapped[str] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+
+
+class CoachCall(Base):
+    """Every billed Claude call: the base for daily limits and the monthly budget."""
+
+    __tablename__ = "coach_calls"
+    __table_args__ = (Index("ix_coach_calls_user_time", "user_id", "created_at"),)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
+    kind: Mapped[str] = mapped_column(String(8))  # review | question
+    model: Mapped[str] = mapped_column(String(64))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, index=True)
+    input_tokens: Mapped[int] = mapped_column(Integer)
+    output_tokens: Mapped[int] = mapped_column(Integer)
+    cache_read_tokens: Mapped[int] = mapped_column(Integer, default=0)
+    cache_write_tokens: Mapped[int] = mapped_column(Integer, default=0)
+    cost_usd: Mapped[float] = mapped_column(Float)
 
 
 # (version, table, column, DDL) — append only; never edit released entries.

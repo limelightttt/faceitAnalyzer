@@ -20,6 +20,7 @@ dependencies = [
     "zstandard>=0.22",
     "sqlalchemy>=2.0",
     "itsdangerous>=2.1",
+    "anthropic>=2.12.0",
 ]
 
 [dependency-groups]
