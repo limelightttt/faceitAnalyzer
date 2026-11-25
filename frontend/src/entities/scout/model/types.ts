@@ -144,6 +144,28 @@ export interface BriefingItem {
   refs: string[]
 }
 
+export interface FairnessSide {
+  avg_elo: number | null
+  lag: number
+  effective_elo: number | null
+  smurfs: { nickname: string; matches: number | null; elo: number | null; signs: string[] }[]
+  parties: { members: string[]; spread: number }[]
+  largest_party: number
+  max_spread: number
+}
+
+/** Is the match even, or does one side start with an edge Elo does not show (backend app/fairness.py). */
+export interface MatchFairness {
+  code: 'against' | 'favour' | 'even'
+  label: string
+  chance_elo: number | null
+  chance_real: number | null
+  against: string[]
+  favour: string[]
+  you: FairnessSide
+  them: FairnessSide
+}
+
 export interface ScoutReport {
   match_id: string
   status: string
@@ -165,6 +187,7 @@ export interface ScoutReport {
     calibrated: boolean
     uncertainty: string
   }
+  fairness?: MatchFairness // reports built before the fairness check have none
   briefing: BriefingItem[]
   result: { winner: Faction | null; score: string | null; players: Record<string, Record<string, string>> } | null
   algo_version: string

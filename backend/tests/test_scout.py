@@ -180,3 +180,32 @@ def test_refresh_rereads_the_room(world_app):
     ).json()
     assert again["reused"] is False
     assert _wait(client, again["id"])["report"]["map"] == "de_nuke"
+
+
+def test_fairness_of_a_scouted_match_and_of_a_history(world_app):
+    """The planted smurf (48 matches, level 10, 83% wins) makes the room unequal against the side facing it;
+    over a history, smurf-flagged accounts are counted per side and the split is tested."""
+    client, world, mock = world_app
+    csrf = login(client, "scout_me")
+    h = {"X-CSRF-Token": csrf}
+    sid = client.post("/api/scout", json={"url": world["upcoming"]}, headers=h).json()["id"]
+    fair = _wait(client, sid)["report"]["fairness"]
+    smurfs = {s["nickname"] for side in ("you", "them") for s in fair[side]["smurfs"]}
+    assert "planted_smurf" in smurfs and fair["chance_real"] is not None
+    side = "them" if any(s["nickname"] == "planted_smurf" for s in fair["them"]["smurfs"]) else "you"
+    assert fair["code"] == ("against" if side == "them" else "favour")
+
+    assert client.get("/api/players/scout_me/fairness").json() is None
+    rid = client.post("/api/players/scout_me/fairness", headers=h).json()["id"]
+    for _ in range(600):
+        r = client.get("/api/players/scout_me/fairness").json()
+        if r["status"] != "running":
+            break
+        time.sleep(0.1)
+    assert r["id"] == rid and r["status"] == "done", r.get("error")
+    res = r["result"]
+    assert res["matches"] == len(res["rows"]) > 0 and res["code"] in ("anomaly", "lean", "none")
+    assert res["against"] == sum(row["code"] == "against" for row in res["rows"])
+    assert res["smurfs"]["slots_them"] == 5 * res["matches"]
+    again = client.post("/api/players/scout_me/fairness", headers=h).json()
+    assert again == {"id": rid, "reused": True}  # recent result: no new FACEIT requests

@@ -10,6 +10,7 @@ from typing import Any
 
 from sqlalchemy import select
 
+from .. import fairness
 from ..db import Database, Prediction, ScoutReport, utcnow
 from ..providers.base import FetchRecord, ProviderError, fetch_log, freshness_summary
 from ..tactical.profiles import pair_synergy, player_profiles
@@ -78,7 +79,10 @@ async def player_bundle(
     profile, lifetime, recent, history = await asyncio.gather(
         safe(provider.get_player_by_id(pid), "профиль", None),
         safe(provider.get_lifetime_stats(pid), "статистика", None),
-        safe(provider.get_recent_match_stats(pid, recent_n), "матчи", []),
+        # recent_n=0: account-level data only (fairness over a history needs hundreds of accounts)
+        safe(provider.get_recent_match_stats(pid, recent_n), "матчи", [])
+        if recent_n
+        else asyncio.sleep(0, []),
         safe(provider.get_history(pid, history_n), "история", []),
     )
     f = build_features(faction, roster, profile, lifetime, recent, history)
@@ -230,16 +234,20 @@ async def build_report(
         w = sum((s.get("win_rate") or 0) * (s.get("matches") or 0) for s in segs)
         return int(n), (round(w / n, 3) if n else None)
 
+    us_k, them_k = (us, them) if us else ("faction1", "faction2")
     for m in all_maps:
-        us_k = us or "faction1"
-        them_k = them if us else "faction2"
         un, uw = agg(by_team[us_k], m)
         tn, tw = agg(by_team[them_k], m)
         pool.append({"map": m, "us_matches": un, "us_win_rate": uw, "them_matches": tn, "them_win_rate": tw})
     pool.sort(key=lambda x: -x["them_matches"])
+    fair = fairness.verdict(
+        fairness.Side(by_team[us_k], None, exclude={user_player_id} if user_player_id else set()),
+        fairness.Side(by_team[them_k], None),
+        (official if us_k == "faction1" else 1 - official) if official is not None else None,
+    )
     ctx = {
-        "us": us or "faction1",
-        "them": them if us else "faction2",
+        "us": us_k,
+        "them": them_k,
         "a_key": "faction1",
         "teams": teams_out,
         "team_names": names,
@@ -276,6 +284,7 @@ async def build_report(
         "user_faction": us,
         "teams": teams_out,
         "comparison": comparison,
+        "fairness": fair,
         "briefing": briefing.build(ctx),
         "result": result,
         "algo_version": ALGO_VERSION,

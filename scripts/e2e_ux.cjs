@@ -278,6 +278,7 @@ const FAST_3G = { latency: 563, downloadThroughput: (1.6 * 1024 * 1024) / 8, upl
     await page.getByText('Ждём выбор карты — отчёт обновится сам').waitFor({ timeout: 120000 })
     const threats = await page.getByText('Главные угрозы').boundingBox()
     ok(threats && threats.y + threats.height < 900, 'report: chance, threats, duos and map fit the first screen')
+    ok(await page.getByText('НЕРАВНЫЙ МАТЧ — против вас').isVisible(), 'report: the planted smurf makes the room unequal, shown before anything else')
     await shot(page, 'report-1-summary')
     before = page.url()
     await pick('de_nuke')
@@ -312,6 +313,14 @@ const FAST_3G = { latency: 563, downloadThroughput: (1.6 * 1024 * 1024) / 8, upl
     await page.getByRole('button', { name: 'Цель уже есть' }).waitFor()
     ok(true, 'coach: advice becomes a tracked goal in one click')
     await shot(page, 'coach-2-chat', true)
+
+    // ── 3d. Match fairness: the room verdict in the scout summary, the history check on the player page ──
+    await spaGo(page, '/players/scout_me/matchmaking')
+    await page.getByRole('button', { name: 'Проверить последние 30 матчей' }).click()
+    await page.getByText(/^Проверено .*: \d+ матчей, \d+ аккаунтов/).waitFor({ timeout: 180000 })
+    ok(await page.getByText(/^(АНОМАЛИЯ|Перекос против вас есть|Перекоса против вас не видно)/).isVisible(), 'fairness: the history check names which side got the edge, with facts')
+    ok(await page.getByText(/Аккаунты со смурф-признаками: у соперников \d+ на \d+ мест/).isVisible(), 'fairness: smurf-flagged accounts are counted per side')
+    await shot(page, 'fairness-1-history', true)
 
     // ── 4. Demo upload: progress, cancel, failure + retry, processing, duplicate ──────────────────────
     await page.getByRole('link', { name: 'Демки', exact: true }).click()

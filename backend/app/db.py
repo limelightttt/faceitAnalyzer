@@ -7,6 +7,7 @@ Separation of concerns, as required:
 * user_settings              — preferences
 * player_snapshots           — official FACEIT values observed over time (Elo, level, lifetime stats)
 * scout_reports / predictions / prediction_outcomes — immutable pre-match snapshots and later results
+* fairness_reports           — which side got the edge in a player's recent matches
 * feedback                   — user opinions about conclusions, stored separately from facts
 * tactical_samples           — positional observations extracted from parsed demos
 * goals                      — coaching goals with frozen baselines
@@ -137,6 +138,20 @@ class ScoutReport(Base):
     error: Mapped[str | None] = mapped_column(Text)
     match_status: Mapped[str | None] = mapped_column(String(16))
     report: Mapped[dict | None] = mapped_column(JSON)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime)
+
+
+class FairnessReport(Base):
+    """Fairness over a player's recent matches (background job, like a scout)."""
+
+    __tablename__ = "fairness_reports"
+    id: Mapped[str] = mapped_column(String(16), primary_key=True)
+    player_id: Mapped[str] = mapped_column(String(64), index=True)
+    status: Mapped[str] = mapped_column(String(16))  # running|done|error
+    progress: Mapped[float] = mapped_column(Float, default=0)
+    error: Mapped[str | None] = mapped_column(Text)
+    result: Mapped[dict | None] = mapped_column(JSON)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
     finished_at: Mapped[datetime | None] = mapped_column(DateTime)
 

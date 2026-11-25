@@ -419,6 +419,14 @@ def analyze(ds: PlayerDataset) -> dict[str, Any]:
             "согласуется с гипотезой, но так же хорошо объясняется альтернативами (см. каждый тест). "
             "Это не доказательство существования скрытого пула."
         )
+    elif any(t["status"] == "weak_signal" for t in hp_ran):
+        verdict, confidence = "weak_signal", "low"
+        weak = ", ".join(t["title"] for t in hp_ran if t["status"] == "weak_signal")
+        text = (
+            f"Есть слабый сигнал в тестах гипотезы «скрытого пула» ({weak}): отклонение заметно, но после "
+            "поправки на множественные сравнения или по величине эффекта оно ещё может быть случайностью. "
+            "Стоит перепроверить на большей выборке."
+        )
     else:
         verdict, confidence = "no_evidence", "low" if len(ms) < 80 else "medium"
         text = (

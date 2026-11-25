@@ -105,5 +105,20 @@ def test_matchmaking_detects_planted_effect():
     # planted: stronger hidden opponents after win streaks -> worse results than Elo expects
     assert by_id["streak_residual"]["status"] in ("anomaly", "weak_signal")
     assert by_id["streak_residual"]["statistic"] < 0
-    assert res["verdict"]["code"] in ("anomaly", "no_evidence")
-    assert "не доказательство" in res["verdict"]["text"] or res["verdict"]["code"] == "no_evidence"
+    # regression: a planted effect that shows up as a weak signal must never read "no evidence"
+    assert res["verdict"]["code"] in ("anomaly", "weak_signal")
+    assert ("не доказательство" if res["verdict"]["code"] == "anomaly" else "слабый сигнал") in res[
+        "verdict"
+    ]["text"]
+
+
+def test_matchmaking_weak_planted_effect_is_reported_as_a_weak_signal():
+    """Regression: a small planted effect used to be summed up as "no evidence in the data"."""
+    res = matchmaking.analyze(
+        _dataset_from_generated(generate(seed=22, n_matches=250, hidden_pool_strength=0.5))
+    )
+    assert res["verdict"]["code"] == "weak_signal"
+    assert (
+        res["verdict"]["text"].startswith("Есть слабый сигнал")
+        and "Результат после серий" in res["verdict"]["text"]
+    )
