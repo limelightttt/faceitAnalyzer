@@ -1,8 +1,8 @@
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
-import { apiGet } from '@/shared/api/client'
+import { apiGet, apiPost } from '@/shared/api/client'
 
-import type { BestWorst, EloReport, Insights, MatchDetail, Matchmaking, Overview } from '../model/types'
+import type { BestWorst, EloReport, FairnessReport, Insights, MatchDetail, Matchmaking, Overview } from '../model/types'
 
 const enc = encodeURIComponent
 
@@ -29,3 +29,23 @@ export const useElo = (nick: string, limit: number) => usePlayerResource<EloRepo
 export const useMatchmaking = (nick: string, limit: number) => usePlayerResource<Matchmaking>(nick, limit, 'matchmaking')
 export const useMatchDetail = (nick: string, limit: number, matchId: string) =>
   usePlayerResource<MatchDetail>(nick, limit, `matches/${enc(matchId)}`)
+
+const fairnessKey = (nick: string) => ['player', nick.toLowerCase(), 'fairness'] as const
+
+/** Latest fairness check of a player's recent matches; polls while the server job runs. */
+export const useFairness = (nick: string) =>
+  useQuery({
+    queryKey: fairnessKey(nick),
+    queryFn: ({ signal }) => apiGet<FairnessReport | null>(`/players/${enc(nick)}/fairness`, signal),
+    enabled: Boolean(nick),
+    refetchInterval: (q) => (q.state.data?.status === 'running' ? 1500 : false),
+  })
+
+export const useStartFairness = (nick: string) => {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (refresh: boolean) => apiPost<{ id: string; reused: boolean }>(`/players/${enc(nick)}/fairness${refresh ? '?refresh=true' : ''}`),
+    meta: { inlineError: true },
+    onSuccess: () => qc.invalidateQueries({ queryKey: fairnessKey(nick) }),
+  })
+}

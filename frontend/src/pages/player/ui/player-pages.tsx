@@ -12,6 +12,7 @@ import { InsightsPanel } from '@/widgets/insights-panel'
 import { MapStats } from '@/widgets/map-stats'
 import { MatchScoreboard } from '@/widgets/match-scoreboard'
 import { MatchesTable } from '@/widgets/matches-table'
+import { FairnessPanel } from '@/widgets/fairness-panel'
 import { MatchmakingPanel } from '@/widgets/matchmaking-panel'
 import { PlayerKpis } from '@/widgets/player-kpis'
 import { RatingTrend } from '@/widgets/rating-trend'
@@ -91,9 +92,12 @@ export function PlayerEloPage() {
 export function PlayerMatchmakingPage() {
   const { nickname, limit } = usePlayerParams()
   return (
-    <Tab q={useMatchmaking(nickname, limit)} label="Анализируем матчмейкинг" skeleton={<ChartsSkeleton />}>
-      {(d) => <MatchmakingPanel data={d} />}
-    </Tab>
+    <div className="space-y-4">
+      <FairnessPanel nickname={nickname} />
+      <Tab q={useMatchmaking(nickname, limit)} label="Анализируем матчмейкинг" skeleton={<ChartsSkeleton />}>
+        {(d) => <MatchmakingPanel data={d} />}
+      </Tab>
+    </div>
   )
 }
 

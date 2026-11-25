@@ -17,7 +17,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from . import tracking
 from .config import Settings, get_settings
-from .db import ScoutReport, TacticalSample
+from .db import FairnessReport, ScoutReport, TacticalSample
 from .providers.base import ProviderError
 from .providers.faceit_api import FaceitApiProvider
 from .routes import ai_coach, auth, coach, demos, maps, me, players, scout, stack
@@ -68,14 +68,16 @@ def create_app(
             on_demo_done(m["id"], ctx.demos.analysis(m["id"]) or {})
         ctx.db.meta_set("tactical_keying", "fingerprint-v1")
 
-    def fail_interrupted_scouts() -> None:
+    def fail_interrupted_jobs() -> None:
         with ctx.db.session() as s:
             for row in s.scalars(select(ScoutReport).where(ScoutReport.status == "running")):
                 row.status, row.error = "error", "Разведка прервана перезапуском сервера — запустите снова"
+            for row in s.scalars(select(FairnessReport).where(FairnessReport.status == "running")):
+                row.status, row.error = "error", "Проверка прервана перезапуском сервера — запустите снова"
 
     @asynccontextmanager
     async def lifespan(_: FastAPI):
-        fail_interrupted_scouts()
+        fail_interrupted_jobs()
         ctx.demos.seed_sample(settings.sample_demos_dir)
         rebuild_tactical_once()
         jobs = []

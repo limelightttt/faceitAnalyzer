@@ -1,10 +1,15 @@
+from datetime import timedelta
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from ..analytics import elo, insights, matchmaking, player
+from ..auth.security import client_ip
+from ..db import FairnessReport, utcnow
 from ..domain import PlayerDataset
+from ..services import fairness as fairness_job
 from ..services.players import load_player_dataset, load_snapshots
 from ..state import AppState, Auth, get_db, get_state, require_access
 from .me import log_analysis
@@ -65,3 +70,49 @@ async def player_match(
         "team_index": pm.team_index,
         "player_id": ds.profile.player_id,
     }
+
+
+FAIRNESS_REUSE = timedelta(hours=6)  # the same accounts again: no new FACEIT requests needed
+
+
+def _latest_fairness(db: Session, player_id: str) -> FairnessReport | None:
+    return db.scalar(
+        select(FairnessReport)
+        .where(FairnessReport.player_id == player_id)
+        .order_by(FairnessReport.created_at.desc())
+        .limit(1)
+    )
+
+
+@router.get("/{nickname}/fairness")
+async def player_fairness(nickname: str, state: AppState = Depends(get_state), db: Session = Depends(get_db)):
+    ds = await dataset(state, nickname, 100)
+    row = _latest_fairness(db, ds.profile.player_id)
+    if row is None:
+        return None
+    return {
+        "id": row.id,
+        "status": row.status,
+        "progress": row.progress,
+        "error": row.error,
+        "result": row.result,
+        "created_at": row.created_at.isoformat() + "Z",
+    }
+
+
+@router.post("/{nickname}/fairness")
+async def start_fairness(
+    nickname: str,
+    request: Request,
+    refresh: bool = False,
+    state: AppState = Depends(get_state),
+    db: Session = Depends(get_db),
+    auth: Auth = Depends(require_access),
+):
+    state.limiter.check(f"fairness:{auth.user.id if auth.user else client_ip(request)}", 6)
+    ds = await dataset(state, nickname, 100)
+    row = _latest_fairness(db, ds.profile.player_id)
+    fresh = row and row.status == "done" and utcnow() - row.created_at < FAIRNESS_REUSE
+    if row and (row.status == "running" or (fresh and not refresh)):
+        return {"id": row.id, "reused": True}
+    return {"id": fairness_job.start(state, ds), "reused": False}

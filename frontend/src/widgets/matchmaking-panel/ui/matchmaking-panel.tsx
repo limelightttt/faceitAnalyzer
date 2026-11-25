@@ -181,6 +181,7 @@ function TestCard({ t }: { t: MMTest }) {
 export function MatchmakingPanel({ data }: { data: Matchmaking }) {
   const v = data.verdict
   const tone = v.code === 'anomaly' ? 'border-critical/40 bg-critical/5' : v.code === 'no_evidence' ? 'border-good/30 bg-good/5' : 'border-warning/40 bg-warning/10'
+  const head = { anomaly: 'АНОМАЛИЯ (не доказательство)', weak_signal: 'слабый сигнал — может быть случайностью', no_evidence: 'аномалий не найдено', insufficient_data: 'проверить нельзя' }[v.code]
   return (
     <div className="space-y-4">
       <div className={cn('rounded-xl border p-5', tone)}>
@@ -189,7 +190,7 @@ export function MatchmakingPanel({ data }: { data: Matchmaking }) {
           <div>
             <div className="text-sm font-semibold">
               Гипотеза «скрытого пула»:{' '}
-              {v.code === 'anomaly' ? 'найдена аномалия (не доказательство)' : v.code === 'no_evidence' ? 'подтверждений в данных нет' : 'проверить нельзя'}
+              {head}
               {v.confidence !== 'none' && <span className="font-normal text-muted-foreground"> · доверие к выводу: {v.confidence === 'medium' ? 'среднее' : 'низкое'}</span>}
             </div>
             <p className="mt-1 text-sm text-muted-foreground">{v.text}</p>

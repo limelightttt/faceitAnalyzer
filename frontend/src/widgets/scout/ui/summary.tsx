@@ -3,7 +3,7 @@ import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 
 import { MapChip } from '@/entities/match'
-import type { ScoutReport } from '@/entities/scout'
+import { FairnessVerdict, type ScoutReport } from '@/entities/scout'
 import { cn } from '@/shared/lib/cn'
 import { fmt, mapName, pct } from '@/shared/lib/format'
 import { Avatar, Badge, Card, Hint } from '@/shared/ui'
@@ -37,6 +37,7 @@ export function ScoutSummary({ r, waitingForMap }: { r: ScoutReport; waitingForM
   const chance = s.winChance === null ? null : Math.round(s.winChance * 100)
   return (
     <Card className="overflow-hidden border-primary/25">
+      {r.fairness && <FairnessVerdict v={r.fairness} className="m-5 mb-0" />}
       <div className="grid gap-6 p-5 lg:grid-cols-[220px_repeat(3,minmax(0,1fr))]">
         <div className="space-y-2 lg:border-r lg:pr-6">
           <div className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">Шанс {r.user_faction ? 'вашей команды' : teamLabel(r, s.side)}</div>

@@ -205,7 +205,7 @@ export interface Matchmaking {
   matches: number
   tests: MMTest[]
   anomalies: string[]
-  verdict: { code: 'insufficient_data' | 'anomaly' | 'no_evidence'; confidence: string; text: string }
+  verdict: { code: 'insufficient_data' | 'anomaly' | 'weak_signal' | 'no_evidence'; confidence: string; text: string }
   method: string
   fdr: number
 }
@@ -259,3 +259,42 @@ export interface MatchDetail {
   }
 }
 
+
+export interface FairnessRow {
+  match_id: string
+  started_at: string | null
+  map: string | null
+  won: boolean | null
+  score: string | null
+  code: 'against' | 'favour' | 'even'
+  label: string
+  chance_elo: number | null
+  chance_real: number | null
+  against: string[]
+  favour: string[]
+}
+
+export interface FairnessResult {
+  code: 'anomaly' | 'lean' | 'none'
+  title: string
+  facts: string[]
+  matches: number
+  against: number
+  favour: number
+  lost_against: number
+  smurfs: { them: number; you: number; slots_them: number; slots_you: number; ratio: number | null; p_value: number | null }
+  p_uneven: number | null
+  note: string
+  rows: FairnessRow[]
+  accounts: number
+  accounts_missing: number
+}
+
+export interface FairnessReport {
+  id: string
+  status: 'running' | 'done' | 'error'
+  progress: number
+  error: string | null
+  result: FairnessResult | null
+  created_at: string
+}
