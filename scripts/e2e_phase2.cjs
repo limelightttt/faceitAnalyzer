@@ -37,7 +37,6 @@ const ok = (c, m) => {
 
   await page.goto(BASE + '/players/scout_me')
   await page.getByText('Win rate').first().waitFor()
-  ok(await page.getByText('FACEIT API').first().isVisible(), 'player page uses FACEIT API source')
 
   await page.goto(BASE + '/scout')
   await page.getByLabel('Ссылка на комнату или ник FACEIT').fill(`https://www.faceit.com/ru/cs2/room/${up.match_id}`)
@@ -47,7 +46,7 @@ const ok = (c, m) => {
   const scoutUrl = page.url()
   ok((await page.locator('text=угроза').count()) >= 10, 'both rosters rendered with threat ranks (10 players)')
   ok(await page.getByText('Необычно сильный новый аккаунт').first().isVisible(), 'planted anomalous profile is flagged with explanation')
-  ok(await page.getByText('Снимок прогноза зафиксирован').isVisible(), 'prediction snapshot stored before the match')
+  ok(await page.getByText('Прогноз сохранён').isVisible(), 'prediction snapshot stored before the match')
   await page.getByRole('button', { name: 'Вывод подтвердился (ваш отзыв)' }).first().click()
   await page.waitForTimeout(500)
   ok((await page.locator('[aria-pressed="true"]').count()) >= 1, 'feedback stored for a briefing item')

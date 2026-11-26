@@ -46,7 +46,6 @@ export function AuthScreen({ phase, returnTo, onRetry, onSuccessShown }: { phase
             </div>
           </MorphHeight>
         </div>
-        <p className="mt-4 text-center text-[11px] text-subtle-foreground">Не аффилировано с FACEIT или Valve.</p>
       </div>
     </div>
   )

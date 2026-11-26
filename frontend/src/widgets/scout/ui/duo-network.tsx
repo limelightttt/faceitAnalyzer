@@ -51,10 +51,7 @@ export function DuoNetwork({ r }: { r: ScoutReport }) {
     <Card>
       <CardHeader>
         <CardTitle>Связки и химия команд</CardTitle>
-        <CardDescription>
-          По последним 30 матчам каждого игрока. FACEIT не подтверждает состав пати — это частота совместной игры. «Устойчивое взаимодействие» требует подтверждения
-          в демках (совместные позиции или размены).
-        </CardDescription>
+        <CardDescription>По последним 30 матчам каждого игрока</CardDescription>
         <div className="flex flex-wrap gap-4 pt-1 text-[11px] text-muted-foreground">
           <span className="flex items-center gap-1.5">
             <svg width="22" height="6">

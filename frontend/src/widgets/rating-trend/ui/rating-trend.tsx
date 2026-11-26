@@ -4,7 +4,7 @@ import { CartesianGrid, ComposedChart, Line, ReferenceLine, ResponsiveContainer,
 
 import type { TrendPoint } from '@/entities/player'
 import { dateTime, fmt, mapName } from '@/shared/lib/format'
-import { axisProps, Card, CardContent, CardDescription, CardHeader, CardTitle, ChartTooltipBox, gridProps, Legend, Tabs, TabsList, TabsTrigger } from '@/shared/ui'
+import { axisProps, Card, CardContent, CardHeader, CardTitle, ChartTooltipBox, gridProps, Legend, Tabs, TabsList, TabsTrigger } from '@/shared/ui'
 
 type Metric = 'rating' | 'adr' | 'kd'
 const LABEL: Record<Metric, string> = { rating: 'Rating 1.0', adr: 'ADR', kd: 'K/D' }
@@ -22,7 +22,6 @@ export function RatingTrend({ trend, nickname, search }: { trend: TrendPoint[]; 
       <CardHeader className="flex-row items-start justify-between gap-3">
         <div>
           <CardTitle>Динамика формы</CardTitle>
-          <CardDescription>По матчам от старых к новым · точка — матч, линия — скользящее среднее за 5 матчей · клик открывает матч</CardDescription>
         </div>
         <Tabs value={metric} onValueChange={(v) => setMetric(v as Metric)}>
           <TabsList>

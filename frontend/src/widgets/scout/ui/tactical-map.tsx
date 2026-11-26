@@ -37,9 +37,7 @@ export function TacticalMap({ r }: { r: ScoutReport }) {
       <CardHeader className="flex-row flex-wrap items-start justify-between gap-3">
         <div>
           <CardTitle>Тактическая карта · {mapName(r.map)}</CardTitle>
-          <CardDescription>
-            Только реальные позиции из разобранных вами демок (через {phase === 'early' ? '12' : '28'} с после freeze time). Нет демок — нет точек: позиции не придумываются.
-          </CardDescription>
+          <CardDescription>Позиции из разобранных демок</CardDescription>
         </div>
         <div className="flex flex-wrap gap-2">
           <Select label="Команда" value={team} onChange={(v) => setTeam(v as Faction)} options={orderedFactions(r).map((f) => ({ value: f, label: teamLabel(r, f) }))} />

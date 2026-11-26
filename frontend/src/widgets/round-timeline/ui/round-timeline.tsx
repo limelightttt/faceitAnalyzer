@@ -2,7 +2,7 @@ import { Bomb, Clock, Flag, Scissors, Skull, Star } from 'lucide-react'
 
 import type { DemoAnalysis, DemoRound } from '@/entities/demo'
 import { cn } from '@/shared/lib/cn'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, Hint, Legend } from '@/shared/ui'
+import { Card, CardContent, CardHeader, CardTitle, Hint, Legend } from '@/shared/ui'
 
 function ReasonIcon({ r }: { r: DemoRound }) {
   const cls = 'size-3.5'
@@ -29,7 +29,6 @@ export function RoundTimeline({
     <Card>
       <CardHeader>
         <CardTitle>Таймлайн раундов</CardTitle>
-        <CardDescription>Цвет — победившая команда, иконка — как закончился раунд, ★ — есть хайлайт. Клик открывает раунд.</CardDescription>
         <Legend
           items={[
             { label: a.name, color: 'var(--series-1)' },
@@ -96,7 +95,6 @@ export function RoundTimeline({
             )
           })}
         </div>
-        {focus && <p className="text-xs text-subtle-foreground">Полоска под раундом — фокус-игрок: зелёная — 2+ убийства, светло-зелёная — 1, красная — погиб без убийств.</p>}
       </CardContent>
     </Card>
   )

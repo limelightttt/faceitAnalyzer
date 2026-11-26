@@ -37,9 +37,7 @@ export function MapsSection({ r }: { r: ScoutReport }) {
         <CardHeader className="gap-3">
           <div>
             <CardTitle>Пул карт вашего стака</CardTitle>
-            <CardDescription>
-              Отметьте, с кем вы в пати: оценка учитывает каждого игрока и матчи, сыгранные вместе. Справа — как эти карты играют {opponents.name}.
-            </CardDescription>
+            <CardDescription>Отметьте, с кем вы в пати · справа — {opponents.name}</CardDescription>
           </div>
           <div className="flex flex-wrap gap-1.5" role="group" aria-label="Игроки стака">
             {team.players.map((p) => {

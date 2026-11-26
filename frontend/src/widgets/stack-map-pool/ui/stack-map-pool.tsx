@@ -124,7 +124,6 @@ function PoolTable({ pool, opponents }: { pool: StackPool; opponents?: OpponentM
           })}
         </TBody>
       </Table>
-      <p className="px-5 text-[11px] leading-relaxed text-subtle-foreground">{pool.method}</p>
     </div>
   )
 }

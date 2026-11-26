@@ -6,7 +6,7 @@ import { MapChip, ratingTone, ResultPill } from '@/entities/match'
 import type { MatchRow } from '@/entities/player'
 import { cn } from '@/shared/lib/cn'
 import { dateTime, fmt, mapName } from '@/shared/lib/format'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, EmptyState, Hint, Select, Table, TBody, TD, TH, THead, TR } from '@/shared/ui'
+import { Card, CardContent, CardHeader, CardTitle, EmptyState, Hint, Select, Table, TBody, TD, TH, THead, TR } from '@/shared/ui'
 
 export function MatchesTable({
   matches,
@@ -38,7 +38,6 @@ export function MatchesTable({
       <CardHeader className="flex-row flex-wrap items-start justify-between gap-3">
         <div>
           <CardTitle>{title}</CardTitle>
-          <CardDescription>Новые сверху · клик по строке — подробности матча</CardDescription>
         </div>
         {limit === undefined && (
           <div className="flex flex-wrap gap-2">

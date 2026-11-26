@@ -69,7 +69,7 @@ export function DemoDetailPage() {
       <div className="flex flex-col gap-4 rounded-xl border bg-card p-5 md:flex-row md:items-center md:justify-between">
         <div>
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <MapChip map={analysis.map} /> · {analysis.rounds_played} раундов · {clock(analysis.duration_s)} · {analysis.parser}
+            <MapChip map={analysis.map} /> · {analysis.rounds_played} раундов · {clock(analysis.duration_s)}
           </div>
           <div className="mt-2 flex items-center gap-4 text-2xl font-semibold tracking-tight">
             <span className="flex items-center gap-2">

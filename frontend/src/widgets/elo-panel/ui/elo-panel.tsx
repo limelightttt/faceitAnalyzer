@@ -2,7 +2,7 @@ import { Area, CartesianGrid, ComposedChart, Line, LineChart, ReferenceLine, Res
 
 import type { EloReport } from '@/entities/player'
 import { dateTime, pct, signed } from '@/shared/lib/format'
-import { axisProps, Badge, Card, CardContent, CardDescription, CardHeader, CardTitle, ChartTooltipBox, EmptyState, gridProps, Legend, StatTile } from '@/shared/ui'
+import { axisProps, Card, CardContent, CardHeader, CardTitle, ChartTooltipBox, EmptyState, gridProps, Legend, StatTile } from '@/shared/ui'
 
 interface Point {
   x: number
@@ -59,20 +59,12 @@ export function EloPanel({ data }: { data: EloReport }) {
 
       <Card>
         <CardHeader>
-          <div className="flex flex-wrap items-center gap-2">
-            <CardTitle>Траектория Elo: реконструкция и прогноз</CardTitle>
-            <Badge variant="warn">Исследовательская оценка, не официальный рейтинг</Badge>
-          </div>
-          <CardDescription>
-            Ось X — матчи относительно текущего (0). Слева — Elo, восстановленный назад от официального значения по правилу Elo (K = 50);
-            справа — медиана и 80% интервал Monte Carlo прогноза.
-          </CardDescription>
+          <CardTitle>Elo: история и прогноз</CardTitle>
         </CardHeader>
         <CardContent>
           {points.length === 0 ? (
             <EmptyState title="Недостаточно данных для траектории">
-              Нужен официальный текущий Elo (FACEIT API) и история матчей. В реальном снимке старого бота Elo отсутствует.
-              {proj?.relative && ` Относительный прогноз: медиана ${signed(last?.p50, 0)} Elo за ${proj.series.length} матчей.`}
+              {proj?.relative && `Прогноз: медиана ${signed(last?.p50, 0)} Elo за ${proj.series.length} матчей.`}
             </EmptyState>
           ) : (
             <>
@@ -117,17 +109,11 @@ export function EloPanel({ data }: { data: EloReport }) {
 
       <Card>
         <CardHeader>
-          <CardTitle>Наблюдённый официальный Elo</CardTitle>
-          <CardDescription>
-            Реальные значения FACEIT, зафиксированные приложением (при открытии профиля и автоматически каждые несколько часов для привязанных аккаунтов).
-            Новая точка — только при изменении; между точками значение подтверждалось, но не менялось.
-          </CardDescription>
+          <CardTitle>Elo по дням</CardTitle>
         </CardHeader>
         <CardContent>
           {data.snapshots.length < 2 ? (
-            <EmptyState title={data.snapshots.length ? `Пока одно наблюдение: ${data.snapshots[0].elo} Elo (${dateTime(data.snapshots[0].at)})` : 'Наблюдений пока нет'}>
-              История формируется только из реально наблюдённых значений — без восстановления задним числом.
-            </EmptyState>
+            <EmptyState title={data.snapshots.length ? `Пока одно значение: ${data.snapshots[0].elo} Elo (${dateTime(data.snapshots[0].at)})` : 'Значений пока нет'} />
           ) : (
             <div className="h-48">
               <ResponsiveContainer width="100%" height="100%">
@@ -155,16 +141,6 @@ export function EloPanel({ data }: { data: EloReport }) {
               </ResponsiveContainer>
             </div>
           )}
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Как считаются оценки</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <pre className="text-xs leading-relaxed whitespace-pre-wrap text-muted-foreground">{data.method.trim()}</pre>
-
         </CardContent>
       </Card>
     </div>

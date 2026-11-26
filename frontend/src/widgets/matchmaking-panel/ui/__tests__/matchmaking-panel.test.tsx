@@ -22,17 +22,27 @@ const data: Matchmaking = {
   ],
 }
 
+const view = (d: Matchmaking) =>
+  render(
+    <TooltipProvider>
+      <MatchmakingPanel data={d} />
+    </TooltipProvider>,
+  )
+
 describe('MatchmakingPanel', () => {
-  it('never presents an anomaly as proof and shows data sufficiency', () => {
-    render(
-      <TooltipProvider>
-        <MatchmakingPanel data={data} />
-      </TooltipProvider>,
-    )
-    expect(screen.getByText(/проверить нельзя/)).toBeInTheDocument()
-    expect(screen.getByText('Мало данных')).toBeInTheDocument()
+  it('states the hidden-pool verdict plainly, without disclaimers', () => {
+    view({ ...data, verdict: { code: 'anomaly', confidence: 'low', text: 'Подбор ведёт себя не как честный подбор по Elo: Серии.' } })
+    expect(screen.getByText('АНОМАЛИЯ')).toBeInTheDocument()
+    expect(screen.getByText(/не как честный подбор по Elo/)).toBeInTheDocument()
+    expect(screen.queryByText(/не доказательство|не утверждаем|Hidden Pool Score/)).toBeNull()
+  })
+
+  it('shows per-test status, chance of a fluke only for signals, and the result sequence', () => {
+    view(data)
+    expect(screen.getAllByText('Мало данных')).toHaveLength(2) // the verdict and the under-sampled test
     expect(screen.getByText('Аномалия')).toBeInTheDocument()
-    expect(screen.getByText(/Hidden Pool Score/)).toBeInTheDocument()
+    expect(screen.getByText('шанс случайности 0.1%')).toBeInTheDocument()
+    expect(screen.getByText('0 матчей из 20 нужных')).toBeInTheDocument()
     expect(screen.getByLabelText('Последовательность результатов').children).toHaveLength(3)
   })
 })

@@ -198,7 +198,7 @@ export function AppLayout() {
         <Gate />
       </main>
       <footer className="mx-auto w-full max-w-7xl px-4 pb-8 text-xs text-subtle-foreground">
-        <span className="font-medium text-muted-foreground">FACEIT Intelligence by limelightttt</span> · Не аффилировано с FACEIT или Valve. Прогнозы, оценки Elo, риск-сигналы и анализ матчмейкинга — исследовательские, не официальные и не обвинения.
+        FACEIT Intelligence by limelightttt
       </footer>
       <ScrollRestoration />
     </div>

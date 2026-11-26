@@ -2,7 +2,7 @@ import { Save } from 'lucide-react'
 import { useSearchParams } from 'react-router-dom'
 
 import { useSaveSettings, useSession, useSettings } from '@/entities/session'
-import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle, EmptyState, InlineError, TagInput } from '@/shared/ui'
+import { Button, Card, CardContent, CardHeader, CardTitle, EmptyState, InlineError, PageHeader, TagInput } from '@/shared/ui'
 import { StackMapPool } from '@/widgets/stack-map-pool'
 
 const MAX = 5
@@ -25,16 +25,10 @@ export function StackPage() {
 
   return (
     <div className="space-y-4">
-      <div>
-        <h1 className="text-xl font-semibold tracking-tight">Пул карт стака</h1>
-        <p className="text-sm text-muted-foreground">
-          Выберите, с кем играете — дуо или пати до 5 человек. Оценка складывается из опыта каждого на карте и матчей, сыгранных вместе, и подсказывает, что брать и что банить.
-        </p>
-      </div>
+      <PageHeader title="Стак">Какие карты брать и банить, когда играете вместе.</PageHeader>
       <Card>
         <CardHeader className="gap-3">
           <CardTitle>Группа</CardTitle>
-          <CardDescription>Ники FACEIT. Ссылку на эту страницу можно отправить другу — группа сохранится в ней.</CardDescription>
           <div className="flex flex-wrap items-center gap-3">
             <TagInput label="Добавить игрока в стак" values={group} onChange={setGroup} max={MAX} />
             {savable && (

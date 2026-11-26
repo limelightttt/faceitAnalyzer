@@ -69,9 +69,7 @@ export function InsightsPanel({ data, compact = false }: { data: Insights; compa
     <Card>
       <CardHeader>
         <CardTitle>Сильные стороны и зоны роста</CardTitle>
-        <CardDescription>
-          Относительно других 9 игроков тех же матчей · точка — средняя разница, линия — 95% интервал, вертикаль — уровень лобби
-        </CardDescription>
+        <CardDescription>Против остальных 9 игроков тех же матчей</CardDescription>
         <div className="flex flex-wrap gap-1.5 pt-1">
           {data.strengths.map((s) => (
             <Badge key={s} variant="good">
@@ -94,7 +92,6 @@ export function InsightsPanel({ data, compact = false }: { data: Insights; compa
             <Row key={i.key} item={i} />
           ))}
         </div>
-        {!compact && <p className="mt-3 text-xs leading-relaxed text-subtle-foreground">Методика: {data.method}</p>}
       </CardContent>
     </Card>
   )

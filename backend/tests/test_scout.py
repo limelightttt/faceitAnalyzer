@@ -209,3 +209,11 @@ def test_fairness_of_a_scouted_match_and_of_a_history(world_app):
     assert res["smurfs"]["slots_them"] == 5 * res["matches"]
     again = client.post("/api/players/scout_me/fairness", headers=h).json()
     assert again == {"id": rid, "reused": True}  # recent result: no new FACEIT requests
+
+
+def test_elo_page_with_a_single_level_lobby(world_app):
+    """Regression: lobbies where everyone has the same FACEIT level made the Elo report fail with NaN (500)."""
+    client, _, _ = world_app
+    login(client, "scout_me")
+    r = client.get("/api/players/scout_me/elo?limit=50")
+    assert r.status_code == 200 and r.json()["implied"]["available"] is False

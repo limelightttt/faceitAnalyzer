@@ -188,8 +188,7 @@ def build(ctx: dict[str, Any]) -> list[dict[str, Any]]:
             add(
                 "hypothesis",
                 "risk",
-                f"{pl['nickname']}: {rk['label'].lower()} — {sig}. Проверьте детали: это "
-                "статистическая необычность, а не доказательство.",
+                f"{pl['nickname']}: {rk['label'].lower()} — {sig}.",
                 {"risk": rk},
                 rk["confidence"],
                 [pl["player_id"]],

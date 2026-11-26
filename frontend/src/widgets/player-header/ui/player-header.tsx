@@ -1,6 +1,6 @@
 import { ExternalLink, Info } from 'lucide-react'
 
-import { type DataQuality, type Profile, SourceBadge } from '@/entities/player'
+import type { DataQuality, Profile } from '@/entities/player'
 import { SampleSizeSelect } from '@/features/sample-size'
 import { Avatar, Badge, Hint } from '@/shared/ui'
 
@@ -28,18 +28,13 @@ export function PlayerHeader({ profile, quality }: { profile: Profile; quality: 
           <div className="flex flex-wrap items-center gap-2">
             <h1 className="truncate text-xl font-semibold tracking-tight">{profile.nickname}</h1>
             <SkillLevel level={profile.skill_level} />
-            <SourceBadge source={quality.source} />
           </div>
           <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
             <span>
               Elo:{' '}
               <span className="font-semibold text-foreground tabular">{profile.elo ?? 'нет данных'}</span>
-              {profile.elo !== null && <span className="text-subtle-foreground"> (официальный)</span>}
             </span>
             {profile.region && <span>Регион: {profile.region}</span>}
-            <span>
-              Загружено матчей: {quality.matches_loaded} (со статистикой {quality.matches_with_stats})
-            </span>
             {profile.faceit_url && (
               <a className="inline-flex items-center gap-1 hover:text-foreground" href={profile.faceit_url} target="_blank" rel="noreferrer">
                 FACEIT <ExternalLink className="size-3" />

@@ -130,6 +130,9 @@ def performance_implied(ds: PlayerDataset) -> dict[str, Any]:
         )
         return res
     x, y = np.array(xs), np.array(ys)
+    if not (x * x).sum():  # every lobby player at the same level: no Elo spread to learn from
+        res["reason"] = "В лобби у всех игроков один уровень FACEIT — связь рейтинга с Elo оценить нельзя."
+        return res
     slope = float((x * y).sum() / (x * x).sum())  # rating per Elo point (within-match, no intercept)
     resid = y - slope * x
     se = float(np.sqrt(resid.var() / (x * x).sum()))

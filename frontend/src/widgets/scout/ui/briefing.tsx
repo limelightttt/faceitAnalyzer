@@ -3,7 +3,7 @@ import { useState } from 'react'
 
 import { EvidenceChip, type ScoutJob } from '@/entities/scout'
 import { FeedbackButtons } from '@/features/feedback'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, EmptyState, Tabs, TabsList, TabsTrigger } from '@/shared/ui'
+import { Card, CardContent, CardHeader, CardTitle, EmptyState, Tabs, TabsList, TabsTrigger } from '@/shared/ui'
 
 const CAT: Record<string, { icon: typeof Shield; label: string }> = {
   strength: { icon: Swords, label: 'Баланс' },
@@ -25,7 +25,6 @@ export function Briefing({ job }: { job: ScoutJob }) {
       <CardHeader className="flex-row flex-wrap items-start justify-between gap-3">
         <div>
           <CardTitle className="text-base">Предматчевый брифинг</CardTitle>
-          <CardDescription>Каждый вывод выведен из данных и помечен: факт, статистическая оценка или гипотеза. Раскройте пункт, чтобы увидеть доказательства.</CardDescription>
         </div>
         <Tabs value={filter} onValueChange={setFilter}>
           <TabsList>
@@ -49,7 +48,6 @@ export function Briefing({ job }: { job: ScoutJob }) {
                     <p className="text-sm leading-relaxed">{b.text}</p>
                     <div className="mt-2 flex flex-wrap items-center gap-2">
                       <EvidenceChip kind={b.kind} />
-                      {b.confidence && <span className="text-[11px] text-subtle-foreground">уровень: {b.confidence}</span>}
                       <button
                         type="button"
                         aria-expanded={open === b.id}

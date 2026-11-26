@@ -2,7 +2,7 @@ import { CornerDownLeft, History, type LucideIcon, Radar, Search, UserRound } fr
 import { type KeyboardEvent, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
-import { useHistory, useSession } from '@/entities/session'
+import { HISTORY_KIND, useHistory, useSession } from '@/entities/session'
 import { useLaunchScout } from '@/features/omni-search'
 import { cn } from '@/shared/lib/cn'
 import { parseFaceitRef } from '@/shared/lib/faceit-ref'
@@ -29,7 +29,6 @@ const HISTORY_PATH: Record<string, (ref: string) => string> = {
   demo: (ref) => `/demos/${ref}`,
   player: (ref) => `/players/${encodeURIComponent(ref)}`,
 }
-const HISTORY_KIND: Record<string, string> = { scout: 'разведка', demo: 'демка', player: 'игрок' }
 
 /** Ctrl/⌘+K from anywhere: paste a room link or type a nickname, jump to a page or a recent analysis. */
 export function CommandPalette({ links }: { links: PaletteLink[] }) {

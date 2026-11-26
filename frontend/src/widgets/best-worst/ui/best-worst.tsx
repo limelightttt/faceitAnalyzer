@@ -94,7 +94,6 @@ export function BestWorst({ data, nickname, search }: { data: BW; nickname: stri
       <Card>
         <CardHeader>
           <CardTitle>Чем отличаются лучшие игры от худших</CardTitle>
-          <CardDescription>Средние значения метрик; у каждой метрики своя шкала</CardDescription>
           <Legend
             items={[
               { label: 'Лучшие', color: 'var(--series-1)' },
@@ -119,7 +118,6 @@ export function BestWorst({ data, nickname, search }: { data: BW; nickname: stri
               </div>
             </div>
           )}
-          {data.method && <p className="mt-3 text-xs text-subtle-foreground">{data.method}</p>}
         </CardContent>
       </Card>
     </div>

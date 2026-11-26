@@ -41,4 +41,8 @@ Never print or commit `backend\.env` contents, keys or session tokens; never ena
 - AI coach (`app/ai_coach/`): Claude sees only the dossier; every point must cite dossier fact ids. Paid calls only on
   click; limits/budget in `routes/ai_coach.py`. Tests use a fake coach; E2E uses the mock's `/v1/messages`.
 - No "dodge" advice; risk signals are statistical, never accusations; toxicity is never inferred.
+- UI copy is direct, like a finished product: no hedging disclaimers ("не доказательство", "мы не утверждаем"), no
+  instructional subtitles ("точка — …, линия — …", "клик открывает…"), no tips, no technical internals (data source,
+  cache counts, algorithm versions, parser versions). Every page starts with `shared/ui` `PageHeader`; a card subtitle
+  is one short line of real information or nothing. The hidden-pool verdict is stated plainly (АНОМАЛИЯ / признаков нет).
 - Each fix comes with a regression test; keep FSD layer boundaries; no dead code.

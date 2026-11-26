@@ -58,7 +58,7 @@ export function DemoPlayerInsights({ data, focus, onFocus }: { data: DemoAnalysi
       <CardHeader className="flex-row flex-wrap items-start justify-between gap-3">
         <div>
           <CardTitle>Разбор игрока</CardTitle>
-          <CardDescription>Сравнение с остальными 9 игроками этого матча; выводы по одному матчу ориентировочные</CardDescription>
+          <CardDescription>Против остальных 9 игроков матча</CardDescription>
         </div>
         <Select label="Игрок" value={focus ?? ''} onChange={onFocus} options={options} className="min-w-44" />
       </CardHeader>

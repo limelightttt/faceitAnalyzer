@@ -4,7 +4,7 @@ import { ratingTone } from '@/entities/match'
 import type { DemoAnalysis, DemoPlayer } from '@/entities/demo'
 import { cn } from '@/shared/lib/cn'
 import { fmt } from '@/shared/lib/format'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, Hint, Table, TBody, TD, TH, THead, TR } from '@/shared/ui'
+import { Card, CardContent, CardHeader, CardTitle, Hint, Table, TBody, TD, TH, THead, TR } from '@/shared/ui'
 
 type Key = 'rating' | 'kills' | 'adr' | 'kast' | 'opening_kills' | 'trade_kills' | 'utility_damage' | 'enemies_flashed'
 
@@ -33,7 +33,6 @@ export function DemoScoreboard({
     <Card>
       <CardHeader>
         <CardTitle>Скорборд</CardTitle>
-        <CardDescription>Клик по игроку — выбрать фокус для персональных выводов · сортировка по заголовку</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4 px-0 pb-2">
         {data.teams.map((team, ti) => {
