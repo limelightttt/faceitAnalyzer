@@ -46,8 +46,7 @@ export function ScoutHeader({ job, onRefresh, refreshing }: { job: ScoutJob; onR
             </span>
           </h1>
           <div className="mt-1 text-xs text-subtle-foreground">
-            Сгенерировано {dateTime(r.generated_at)} · {r.freshness.requests} запросов к FACEIT ({r.freshness.from_cache} из кэша)
-            {r.freshness.oldest && ` · самые старые данные от ${dateTime(r.freshness.oldest)}`} · {r.algo_version}
+            {dateTime(r.generated_at)}
           </div>
           {r.freshness.stale && (
             <div className="mt-1 text-xs text-critical-text">FACEIT API был недоступен — часть данных взята из сохранённого кэша.</div>
@@ -99,11 +98,11 @@ export function PredictionPanel({ job }: { job: ScoutJob }) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <Lock className="size-4" /> Снимок прогноза зафиксирован
+          <Lock className="size-4" /> Прогноз сохранён
         </CardTitle>
         <CardDescription>
-          {dateTime(p.created_at)} · статус матча при прогнозе: {p.match_status_at_prediction}
-          {!p.pre_match && ' (уже шёл — не учитывается в оценке качества)'} · {p.algo_version} · hash {p.input_hash.slice(0, 10)}
+          {dateTime(p.created_at)}
+          {!p.pre_match && ' · матч уже шёл — в статистику прогнозов не идёт'}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-3 text-sm">
@@ -157,7 +156,7 @@ export function MapPool({ r }: { r: ScoutReport }) {
     <Card>
       <CardHeader>
         <CardTitle>Пул карт (до выбора карты)</CardTitle>
-        <CardDescription>Суммарные lifetime-матчи и win rate на карте по составу. Это опыт команд, не рекомендация пикать/банить.</CardDescription>
+        <CardDescription>Lifetime-матчи и win rate на карте</CardDescription>
       </CardHeader>
       <CardContent className="px-0 pb-2">
         <Table>
@@ -199,7 +198,6 @@ export function Stability({ r }: { r: ScoutReport }) {
     <Card>
       <CardHeader>
         <CardTitle>Стабильность составов</CardTitle>
-        <CardDescription>{r.teams.faction1.instability.note}</CardDescription>
       </CardHeader>
       <CardContent className="grid gap-4 md:grid-cols-2">
         {orderedFactions(r).map((f) => {

@@ -4,7 +4,7 @@ import { useState } from 'react'
 import type { DemoAnalysis } from '@/entities/demo'
 import { cn } from '@/shared/lib/cn'
 import { clock } from '@/shared/lib/format'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CopyButton, EmptyState, Select } from '@/shared/ui'
+import { Card, CardContent, CardHeader, CardTitle, CopyButton, EmptyState, Select } from '@/shared/ui'
 
 export function HighlightsList({ data, onRound, focus }: { data: DemoAnalysis; onRound: (n: number) => void; focus: string | null }) {
   const [who, setWho] = useState<string>('all')
@@ -17,9 +17,6 @@ export function HighlightsList({ data, onRound, focus }: { data: DemoAnalysis; o
       <CardHeader className="flex-row flex-wrap items-start justify-between gap-3">
         <div>
           <CardTitle>Хайлайты</CardTitle>
-          <CardDescription>
-            Кандидаты на клип: рейтинг момента 0–100 (мультикилл, клатч, скорость, особые убийства). Команда <code className="font-mono">demo_gototick</code> переносит в нужный момент демки в CS2 (за 5 с до первого убийства).
-          </CardDescription>
         </div>
         <Select
           label="Игрок"

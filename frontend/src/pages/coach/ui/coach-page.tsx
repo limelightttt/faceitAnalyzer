@@ -8,7 +8,7 @@ import { AiCoach, goalKey } from '@/features/ai-coach'
 import { LoginButtons } from '@/features/auth'
 import { cn } from '@/shared/lib/cn'
 import { dateTime, fmt, mapName, pct } from '@/shared/lib/format'
-import { AsyncView, axisProps, Badge, Button, Card, CardContent, CardDescription, CardHeader, CardTitle, ChartTooltipBox, ConfirmButton, EmptyState, gridProps, LoadingSkeleton, Progress, Select, Skeleton, SkeletonCard, SkeletonChart, SkeletonText, Table, TBody, TD, TH, THead, TR } from '@/shared/ui'
+import { AsyncView, axisProps, Badge, Button, Card, CardContent, CardDescription, CardHeader, CardTitle, ChartTooltipBox, ConfirmButton, EmptyState, gridProps, LoadingSkeleton, PageHeader, Progress, Select, Skeleton, SkeletonCard, SkeletonChart, SkeletonText, Table, TBody, TD, TH, THead, TR } from '@/shared/ui'
 
 function fmtMetric(meta: CoachOverview['metrics'][string] | undefined, v: number | null) {
   if (v === null || v === undefined || !meta) return '—'
@@ -107,18 +107,15 @@ function Coach({ d, create }: { d: CoachOverview; create: ReturnType<typeof useC
   const chart = [...d.weekly].reverse()
   return (
     <div className="space-y-4">
-      <div>
-        <h1 className="text-xl font-semibold tracking-tight">Персональный коуч · {d.profile.nickname}</h1>
-        <p className="text-sm text-muted-foreground">
-          Выводы строятся из ваших матчей FACEIT ({d.insights.matches_used} со статистикой) и разобранных демок ({d.demos.length}). Без общих советов — только измеренные отклонения.
-        </p>
-      </div>
+      <PageHeader title="Коуч">
+        {d.profile.nickname} · {d.insights.matches_used} матчей, {d.demos.length} демок
+      </PageHeader>
       <AiCoach goals={d.goals.map((g) => goalKey(g.metric, g.map))} />
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1.4fr_1fr]">
         <Card>
           <CardHeader>
             <CardTitle>Форма по неделям</CardTitle>
-            <CardDescription>Rating 1.0 по неделям (UTC); недели с &lt; 5 матчами не интерпретируются</CardDescription>
+            <CardDescription>Rating 1.0</CardDescription>
           </CardHeader>
           <CardContent>
             {chart.length < 2 ? (
@@ -167,10 +164,10 @@ function Coach({ d, create }: { d: CoachOverview; create: ReturnType<typeof useC
         <Card>
           <CardHeader>
             <CardTitle>Что стоит тренировать</CardTitle>
-            <CardDescription>Только метрики, где вы статистически ниже своих лобби</CardDescription>
+            <CardDescription>Где вы ниже своих лобби</CardDescription>
           </CardHeader>
           <CardContent className="space-y-2">
-            {d.suggestions.length === 0 && <EmptyState title="Выраженных слабых мест не найдено" className="p-6">Нужна большая выборка или данные демок.</EmptyState>}
+            {d.suggestions.length === 0 && <EmptyState title="Выраженных слабых мест нет" className="p-6" />}
             {d.suggestions.map((s) => (
               <div key={s.metric} className="flex items-start justify-between gap-3 rounded-lg border p-3">
                 <div>
@@ -201,21 +198,20 @@ function Coach({ d, create }: { d: CoachOverview; create: ReturnType<typeof useC
       <Card>
         <CardHeader className="gap-3">
           <CardTitle>Цели</CardTitle>
-          <CardDescription>Базовый уровень фиксируется при создании; прогресс считается только по матчам/демкам после этого момента.</CardDescription>
           <NewGoal data={d} />
         </CardHeader>
         <CardContent className="grid gap-3 md:grid-cols-2">
-          {d.goals.length === 0 ? <EmptyState title="Целей пока нет" className="p-6 md:col-span-2">Выберите метрику выше — базовый уровень зафиксируется в момент постановки.</EmptyState> : d.goals.map((g) => <GoalCard key={g.id} g={g} meta={d.metrics[g.metric]} />)}
+          {d.goals.length === 0 ? <EmptyState title="Целей пока нет" className="p-6 md:col-span-2" /> : d.goals.map((g) => <GoalCard key={g.id} g={g} meta={d.metrics[g.metric]} />)}
         </CardContent>
       </Card>
       <Card>
         <CardHeader>
           <CardTitle>Повторяющиеся ошибки в демках</CardTitle>
-          <CardDescription>Паттерны, встречающиеся минимум в двух ваших демках (по SteamID {d.profile.steam_id ?? '—'})</CardDescription>
+          <CardDescription>Повторяются минимум в двух демках</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
           {d.mistakes.length === 0 ? (
-            <EmptyState title={d.demos.length < 2 ? 'Нужно минимум 2 разобранные демки с вашим участием' : 'Повторяющихся ошибок не найдено'} />
+            <EmptyState title={d.demos.length < 2 ? 'Загрузите хотя бы две свои демки' : 'Повторяющихся ошибок нет'} />
           ) : (
             d.mistakes.map((m) => (
               <div key={m.kind} className="rounded-lg border border-critical/30 bg-critical/5 p-3 text-sm">

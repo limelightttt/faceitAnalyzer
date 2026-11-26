@@ -6,7 +6,7 @@ import { type PredictionMetrics, usePredictionMetrics, usePredictions, useResolv
 import { useSession } from '@/entities/session'
 import { LoginButtons } from '@/features/auth'
 import { dateTime, pct } from '@/shared/lib/format'
-import { AsyncView, axisProps, Button, Card, CardContent, CardDescription, CardHeader, CardTitle, ChartTooltipBox, EmptyState, gridProps, Legend, LoadingSkeleton, Notice, OfflineState, SkeletonCard, SkeletonChart, SkeletonTable, SkeletonTiles, StatTile, Table, TBody, TD, TH, THead, TR } from '@/shared/ui'
+import { AsyncView, axisProps, Button, Card, CardContent, CardDescription, CardHeader, CardTitle, ChartTooltipBox, EmptyState, gridProps, Legend, LoadingSkeleton, OfflineState, PageHeader, SkeletonCard, SkeletonChart, SkeletonTable, SkeletonTiles, StatTile, Table, TBody, TD, TH, THead, TR } from '@/shared/ui'
 import { notify } from '@/shared/lib/notify'
 
 export function PredictionsPage() {
@@ -30,17 +30,16 @@ export function PredictionsPage() {
     })
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="text-xl font-semibold tracking-tight">Проверка прогнозов</h1>
-          <p className="text-sm text-muted-foreground">
-            Каждый предматчевый снимок хранится неизменным; после матча он сравнивается с результатом. Никакого «самообучения» — только прозрачные метрики.
-          </p>
-        </div>
-        <Button variant="secondary" onClick={check} loading={resolve.isPending}>
-          {resolve.isPending ? 'Проверяем…' : 'Проверить завершённые матчи'}
-        </Button>
-      </div>
+      <PageHeader
+        title="Прогнозы"
+        actions={
+          <Button variant="secondary" onClick={check} loading={resolve.isPending}>
+            {resolve.isPending ? 'Проверяем…' : 'Проверить завершённые матчи'}
+          </Button>
+        }
+      >
+        Насколько прогнозы разведки совпали с результатами.
+      </PageHeader>
       {resolve.data && <div className="animate-fade-in text-xs text-muted-foreground">Проверено {resolve.data.checked}, закрыто {resolve.data.resolved}.</div>}
       <AsyncView query={m} skeleton={<MetricsSkeleton />}>
         {(d) => <Metrics d={d} />}
@@ -76,12 +75,11 @@ function Metrics({ d }: { d: PredictionMetrics }) {
         <StatTile label="Точность фаворита" value={pct(d?.favourite_accuracy ?? null)} hint={`n = ${d?.favourite_n ?? 0}`} />
         <StatTile label="Skill vs монетка" value={d?.skill_vs_baseline === undefined ? '—' : `${(d.skill_vs_baseline * 100).toFixed(1)}%`} hint="1 − Brier/0.25" />
       </div>
-      {!enough && <Notice tone="warning">Пока проверено меньше {d.min_for_conclusions} прогнозов — метрики сильно зависят от случая и не говорят о качестве модели.</Notice>}
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
         <Card>
           <CardHeader>
             <CardTitle>Калибровка Elo-ожидания</CardTitle>
-            <CardDescription>Предсказанная и фактическая доля побед faction1 по корзинам вероятности</CardDescription>
+            <CardDescription>Предсказанная и фактическая доля побед</CardDescription>
             <Legend items={[{ label: 'Предсказано', color: 'var(--series-2)' }, { label: 'Фактически', color: 'var(--series-1)' }]} />
           </CardHeader>
           <CardContent>
@@ -121,7 +119,7 @@ function Metrics({ d }: { d: PredictionMetrics }) {
         <Card>
           <CardHeader>
             <CardTitle>Brier score по мере накопления</CardTitle>
-            <CardDescription>Скользящее среднее по всем проверенным прогнозам; линия 0.25 — уровень монетки</CardDescription>
+            <CardDescription>0.25 — уровень монетки</CardDescription>
           </CardHeader>
           <CardContent>
             {!d?.cumulative?.length ? (
@@ -146,7 +144,6 @@ function Metrics({ d }: { d: PredictionMetrics }) {
       <Card>
         <CardHeader>
           <CardTitle>Полезность сигналов</CardTitle>
-          <CardDescription>{d?.signals.note}</CardDescription>
         </CardHeader>
         <CardContent className="grid gap-3 text-sm md:grid-cols-3">
           <div>
@@ -189,7 +186,7 @@ function PredictionList({ list }: { list: ReturnType<typeof usePredictions> }) {
                 <TR>
                   <TH className="pl-5">Создан</TH>
                   <TH>Матч</TH>
-                  <TH className="text-right">P(faction1)</TH>
+                  <TH className="text-right">Шанс команды 1</TH>
                   <TH>Фаворит</TH>
                   <TH>Итог</TH>
                   <TH className="pr-5 text-right">Brier</TH>
@@ -207,7 +204,7 @@ function PredictionList({ list }: { list: ReturnType<typeof usePredictions> }) {
                       </Link>
                     </TD>
                     <TD className="text-right">{pct(p.payload.elo_expectation_faction1)}</TD>
-                    <TD className="text-xs">{p.payload.favoured ?? '≈50/50'}</TD>
+                    <TD className="text-xs">{p.payload.favoured ? `команда ${p.payload.favoured.slice(-1)}` : '≈50/50'}</TD>
                     <TD>
                       {!p.outcome ? (
                         <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">

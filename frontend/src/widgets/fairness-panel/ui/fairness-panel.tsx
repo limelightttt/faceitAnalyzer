@@ -26,9 +26,7 @@ export function FairnessPanel({ nickname }: { nickname: string }) {
         <CardTitle className="flex items-center gap-2">
           <Scale className="size-4" /> Честность матчей
         </CardTitle>
-        <CardDescription>
-          Были ли последние 30 матчей равными: реальный шанс с поправкой на свежие аккаунты, смурф-признаки, пачки с разбросом Elo, стаки против соло. И главное — на чьей стороне эти перекосы оказываются чаще.
-        </CardDescription>
+        <CardDescription>Последние 30 матчей</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <AsyncView query={report} skeleton={<Skeleton className="h-20 w-full" />}>
@@ -39,7 +37,7 @@ export function FairnessPanel({ nickname }: { nickname: string }) {
               </Button>
             ) : r.status === 'running' ? (
               <div className="space-y-2" role="status">
-                <p className="text-sm">Проверяем аккаунты всех игроков из ваших матчей — в первый раз это несколько минут, потом из кэша.</p>
+                <p className="text-sm">Проверяем аккаунты игроков — в первый раз это несколько минут.</p>
                 <Progress value={Math.round(r.progress * 100)} />
               </div>
             ) : r.status === 'error' || !r.result ? (

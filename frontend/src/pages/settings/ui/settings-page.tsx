@@ -6,7 +6,7 @@ import { LoginButtons, LogoutButton } from '@/features/auth'
 import { cn } from '@/shared/lib/cn'
 import { dateTime, mapName } from '@/shared/lib/format'
 import { useSingleFlight } from '@/shared/lib/use-single-flight'
-import { AsyncView, Badge, Button, Card, CardContent, CardDescription, CardHeader, CardTitle, ConfirmButton, EmptyState, InlineError, LoadingSkeleton, Select, Skeleton, TagInput } from '@/shared/ui'
+import { AsyncView, Badge, Button, Card, CardContent, CardHeader, CardTitle, ConfirmButton, EmptyState, InlineError, LoadingSkeleton, PageHeader, Select, Skeleton, TagInput } from '@/shared/ui'
 
 const MAPS = ['de_mirage', 'de_inferno', 'de_dust2', 'de_nuke', 'de_ancient', 'de_anubis', 'de_train']
 const SOURCE: Record<string, string> = {
@@ -27,15 +27,11 @@ export function SettingsPage() {
     )
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold tracking-tight">Аккаунт и настройки</h1>
-        <LogoutButton />
-      </div>
+      <PageHeader title="Настройки" actions={<LogoutButton />} />
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
         <Card>
           <CardHeader>
             <CardTitle>Привязанные аккаунты</CardTitle>
-            <CardDescription>Вход подтверждается самими Steam/FACEIT. Аккаунт, привязанный к другой учётной записи, перепривязать нельзя — это защита от захвата.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             {session.identities?.map((i) => (

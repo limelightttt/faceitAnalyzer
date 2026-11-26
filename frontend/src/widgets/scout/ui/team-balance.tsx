@@ -1,7 +1,7 @@
 import type { Faction, ScoutReport } from '@/entities/scout'
 import { cn } from '@/shared/lib/cn'
 import { pct } from '@/shared/lib/format'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, Hint } from '@/shared/ui'
+import { Card, CardContent, CardHeader, CardTitle, Hint } from '@/shared/ui'
 
 import { FACTION_COLOR, orderedFactions, teamLabel } from './shared'
 
@@ -74,7 +74,6 @@ export function TeamBalance({ r }: { r: ScoutReport }) {
     <Card>
       <CardHeader>
         <CardTitle>Баланс команд</CardTitle>
-        <CardDescription>{c.uncertainty}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
         <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-end gap-4">

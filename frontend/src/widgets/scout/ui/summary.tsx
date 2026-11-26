@@ -147,7 +147,7 @@ export function ScoutSummary({ r, waitingForMap }: { r: ScoutReport; waitingForM
         <a href="#threats" className="flex items-center gap-2 border-t border-warning/30 bg-warning/[0.06] px-5 py-2.5 text-xs hover:bg-warning/10">
           <AlertTriangle className="size-3.5 shrink-0" />
           <span>
-            Необычные профили: {s.flagged.map((p) => `${p.nickname} (${p.risk.label})`).join(', ')} — статистический сигнал, не обвинение.
+            Необычные профили: {s.flagged.map((p) => `${p.nickname} (${p.risk.label})`).join(', ')}
           </span>
         </a>
       )}

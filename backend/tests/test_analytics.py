@@ -107,9 +107,9 @@ def test_matchmaking_detects_planted_effect():
     assert by_id["streak_residual"]["statistic"] < 0
     # regression: a planted effect that shows up as a weak signal must never read "no evidence"
     assert res["verdict"]["code"] in ("anomaly", "weak_signal")
-    assert ("не доказательство" if res["verdict"]["code"] == "anomaly" else "слабый сигнал") in res[
-        "verdict"
-    ]["text"]
+    assert ("скрытый пул" if res["verdict"]["code"] == "anomaly" else "случайностью") in res["verdict"][
+        "text"
+    ]
 
 
 def test_matchmaking_weak_planted_effect_is_reported_as_a_weak_signal():
@@ -118,7 +118,4 @@ def test_matchmaking_weak_planted_effect_is_reported_as_a_weak_signal():
         _dataset_from_generated(generate(seed=22, n_matches=250, hidden_pool_strength=0.5))
     )
     assert res["verdict"]["code"] == "weak_signal"
-    assert (
-        res["verdict"]["text"].startswith("Есть слабый сигнал")
-        and "Результат после серий" in res["verdict"]["text"]
-    )
+    assert res["verdict"]["text"].startswith("Отклонение есть (Результат после серий")

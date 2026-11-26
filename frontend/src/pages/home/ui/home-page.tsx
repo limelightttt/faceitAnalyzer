@@ -1,25 +1,17 @@
-import { Activity, ArrowRight, FileVideo, GraduationCap, Radar, ShieldQuestion, Target } from 'lucide-react'
-import type { CSSProperties } from 'react'
+import { ArrowRight, FileVideo, Target } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
 import { useCoach } from '@/entities/coach'
 import { useOverview } from '@/entities/player'
 import { usePredictionMetrics } from '@/entities/prediction'
-import { useHistory, useSession } from '@/entities/session'
+import { HISTORY_KIND, useHistory, useSession } from '@/entities/session'
 import { LoginButtons } from '@/features/auth'
 import { OmniSearch } from '@/features/omni-search'
-import { dateTime, fmt, pct } from '@/shared/lib/format'
+import { dateTime, pct } from '@/shared/lib/format'
 import { AsyncView, Avatar, Button, Card, CardContent, CardDescription, CardHeader, CardTitle, EmptyState, LoadingSkeleton, OfflineState, Progress, Skeleton, SkeletonText, SkeletonTiles, StatTile } from '@/shared/ui'
 import { DemoList } from '@/widgets/demo-list'
 import { PlayerKpis } from '@/widgets/player-kpis'
 import { ServiceNotes } from '@/widgets/system-status'
-
-const FEATURES = [
-  { icon: Radar, title: 'BEFORE — разведка', text: 'Ссылка на комнату → брифинг по обеим командам, угрозы, связки, риск-профили.' },
-  { icon: ShieldQuestion, title: 'PLAY — что знать', text: 'Тактика соперников из разобранных демок — только при достаточной выборке.' },
-  { icon: Activity, title: 'AFTER — что произошло', text: 'Прогноз фиксируется до матча и сверяется с результатом.' },
-  { icon: GraduationCap, title: 'IMPROVE — как расти', text: 'Цели по измеренным слабым местам, недельные сводки, ошибки из демок.' },
-]
 
 function Dashboard({ nickname }: { nickname: string }) {
   const ov = useOverview(nickname, 50)
@@ -48,10 +40,7 @@ function Dashboard({ nickname }: { nickname: string }) {
             </Link>
           </Button>
         </div>
-        <div className="space-y-1.5">
-          <OmniSearch withDetect />
-          <p className="text-[11px] text-subtle-foreground">Совет: скопируйте ссылку на комнату на FACEIT и нажмите Ctrl+V в любом месте приложения — разведка начнётся сама.</p>
-        </div>
+        <OmniSearch withDetect />
       </section>
       <AsyncView query={ov} notFound="Ваш FACEIT-профиль не найден" skeleton={<LoadingSkeleton label="Загружаем вашу статистику"><SkeletonTiles count={6} className="md:grid-cols-3 xl:grid-cols-6" /></LoadingSkeleton>}>
         {(d) => <PlayerKpis data={d} />}
@@ -138,7 +127,7 @@ function Dashboard({ nickname }: { nickname: string }) {
                     className="-mx-2 flex justify-between gap-2 rounded-md px-2 py-2 transition-colors hover:bg-card-2/60 hover:text-primary"
                   >
                     <span className="truncate">
-                      <span className="mr-1.5 text-[10px] text-subtle-foreground uppercase">{h.kind}</span>
+                      <span className="mr-1.5 text-[11px] text-subtle-foreground">{HISTORY_KIND[h.kind] ?? h.kind}</span>
                       {h.label}
                     </span>
                     <span className="shrink-0 text-xs text-muted-foreground">{dateTime(h.at)}</span>
@@ -149,11 +138,6 @@ function Dashboard({ nickname }: { nickname: string }) {
           </CardContent>
         </Card>
       </div>
-      {coach.data && coach.data.weekly[0] && (
-        <div className="text-xs text-muted-foreground">
-          Эта неделя ({coach.data.weekly[0].week}): {coach.data.weekly[0].matches} матчей, WR {pct(coach.data.weekly[0].win_rate)}, Rating {fmt(coach.data.weekly[0].rating)}.
-        </div>
-      )}
       <DemoList limit={5} />
     </div>
   )
@@ -178,9 +162,6 @@ export function HomePage() {
             <h1 className="text-3xl font-semibold tracking-tight md:text-4xl">FACEIT Intelligence</h1>
             <div className="mt-1 text-sm text-subtle-foreground">by limelightttt</div>
           </div>
-          <p className="text-muted-foreground">
-            Разведка перед матчем, разбор после, рост на дистанции. Только реальные данные FACEIT и ваших демок — с явной пометкой, где факт, где оценка, а где гипотеза.
-          </p>
           {session?.authenticated && !session.game_profile ? (
             <div className="rounded-lg border border-warning/40 bg-warning/10 p-3 text-sm">
               Вы вошли, но FACEIT-профиль не определён. Привяжите FACEIT или Steam с привязанным FACEIT в <Link to="/settings" className="underline">настройках</Link>.
@@ -190,15 +171,6 @@ export function HomePage() {
           )}
           <OmniSearch />
         </div>
-      </section>
-      <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-        {FEATURES.map((f, i) => (
-          <div key={f.title} className="animate-enter rounded-xl border bg-card p-4" style={{ '--i': i + 1 } as CSSProperties}>
-            <f.icon className="size-5 text-primary" />
-            <div className="mt-3 text-sm font-semibold">{f.title}</div>
-            <div className="mt-1 text-xs text-muted-foreground">{f.text}</div>
-          </div>
-        ))}
       </section>
       <DemoList limit={5} />
       <div className="flex justify-center">

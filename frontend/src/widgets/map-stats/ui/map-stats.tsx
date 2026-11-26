@@ -1,7 +1,7 @@
 import type { MapStat } from '@/entities/player'
 import { MapChip } from '@/entities/match'
 import { fmt, pct } from '@/shared/lib/format'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, Hint } from '@/shared/ui'
+import { Card, CardContent, CardHeader, CardTitle, Hint } from '@/shared/ui'
 
 /** Win rate with its 95% Wilson interval drawn as a whisker on a 0-100% track. */
 function WinRateBar({ m }: { m: MapStat }) {
@@ -27,7 +27,6 @@ export function MapStats({ maps }: { maps: MapStat[] }) {
     <Card>
       <CardHeader>
         <CardTitle>Карты</CardTitle>
-        <CardDescription>Win rate с 95% интервалом (линия) — на малых выборках интервал широкий; вертикаль — 50%</CardDescription>
       </CardHeader>
       <CardContent className="space-y-2.5">
         {maps.map((m) => (

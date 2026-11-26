@@ -146,33 +146,12 @@ function TestCard({ t }: { t: MMTest }) {
       <CardContent className="space-y-3">
         <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground tabular">
           <span>
-            n = <b className="text-foreground">{t.n}</b> (мин. {t.min_n})
+            {t.n} матчей{t.status === 'insufficient_data' && ` из ${t.min_n} нужных`}
           </span>
-          {t.p_value !== null && (
-            <span>
-              p = <b className="text-foreground">{t.p_value < 0.001 ? '<0.001' : t.p_value.toFixed(3)}</b>
-            </span>
-          )}
-          {t.q_value !== null && (
-            <span>
-              q (BH) = <b className="text-foreground">{t.q_value < 0.001 ? '<0.001' : t.q_value.toFixed(3)}</b>
-            </span>
-          )}
+          {t.p_value !== null && (t.status === 'anomaly' || t.status === 'weak_signal') && <span>шанс случайности {t.p_value < 0.001 ? '<0.1%' : `${(t.p_value * 100).toFixed(1)}%`}</span>}
         </div>
         {t.effect && <div className="text-sm">{t.effect}</div>}
-        {t.status === 'weak_signal' && !t.practical && (
-          <div className="text-xs text-muted-foreground">Статистически заметно, но размер эффекта практически ничтожен.</div>
-        )}
         {t.status !== 'insufficient_data' && <MiniChart t={t} />}
-        <details className="group text-xs text-muted-foreground">
-          <summary className="cursor-pointer select-none hover:text-foreground">Метод и альтернативные объяснения</summary>
-          <p className="mt-2">{t.method}</p>
-          <ul className="mt-2 list-disc space-y-0.5 pl-4">
-            {t.alternatives.map((a) => (
-              <li key={a}>{a}</li>
-            ))}
-          </ul>
-        </details>
       </CardContent>
     </Card>
   )
@@ -181,25 +160,15 @@ function TestCard({ t }: { t: MMTest }) {
 export function MatchmakingPanel({ data }: { data: Matchmaking }) {
   const v = data.verdict
   const tone = v.code === 'anomaly' ? 'border-critical/40 bg-critical/5' : v.code === 'no_evidence' ? 'border-good/30 bg-good/5' : 'border-warning/40 bg-warning/10'
-  const head = { anomaly: 'АНОМАЛИЯ (не доказательство)', weak_signal: 'слабый сигнал — может быть случайностью', no_evidence: 'аномалий не найдено', insufficient_data: 'проверить нельзя' }[v.code]
+  const head = { anomaly: 'АНОМАЛИЯ', weak_signal: 'Слабый сигнал', no_evidence: 'Признаков нет', insufficient_data: 'Мало данных' }[v.code]
   return (
     <div className="space-y-4">
       <div className={cn('rounded-xl border p-5', tone)}>
-        <div className="flex items-start gap-3">
-          <ShieldQuestion className="mt-0.5 size-5 shrink-0" />
-          <div>
-            <div className="text-sm font-semibold">
-              Гипотеза «скрытого пула»:{' '}
-              {head}
-              {v.confidence !== 'none' && <span className="font-normal text-muted-foreground"> · доверие к выводу: {v.confidence === 'medium' ? 'среднее' : 'низкое'}</span>}
-            </div>
-            <p className="mt-1 text-sm text-muted-foreground">{v.text}</p>
-            <p className="mt-2 text-xs text-subtle-foreground">
-              Мы не утверждаем, что скрытый пул существует или не существует. Проверяются наблюдаемые следствия гипотезы, {data.tests.length} тестов
-              на {data.matches} матчах, поправка Бенджамини–Хохберга (FDR {Math.round(data.fdr * 100)}%). Никакого «Hidden Pool Score» нет намеренно.
-            </p>
-          </div>
+        <div className="flex items-center gap-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+          <ShieldQuestion className="size-4" /> Скрытый пул
         </div>
+        <div className={cn('mt-1 text-lg font-semibold', v.code === 'anomaly' && 'text-critical-text')}>{head}</div>
+        <p className="mt-1 text-sm text-muted-foreground">{v.text}</p>
       </div>
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         {data.tests.map((t) => (

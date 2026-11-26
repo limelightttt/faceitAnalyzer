@@ -30,3 +30,6 @@ export interface UserSettings {
   /** nicknames you usually queue with: the default group for the stack map pool */
   teammates: string[]
 }
+
+/** How each kind of analysis history entry is named in the UI. */
+export const HISTORY_KIND: Record<string, string> = { scout: 'разведка', demo: 'демка', player: 'игрок' }

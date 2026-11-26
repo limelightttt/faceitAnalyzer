@@ -138,13 +138,6 @@ export function MatchDetailPage() {
             </div>
           )}
           <MatchScoreboard detail={d} />
-          <p className="text-xs text-subtle-foreground">
-            Для поминутного разбора (раунды, трейды, хайлайты) скачайте демо этого матча на FACEIT и загрузите его в разделе{' '}
-            <Link to="/demos" className="underline">
-              Демки
-            </Link>
-            .
-          </p>
         </div>
       )}
     </Tab>
